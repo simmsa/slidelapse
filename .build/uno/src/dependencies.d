@@ -33,9 +33,9 @@
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/Printable.h \
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/new.h \
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/variants/standard/pins_arduino.h \
-  lib/Button/Button.h lib/Wire/Wire.h \
+  lib/Wire/Wire.h \
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/Stream.h \
   lib/LiquidCrystal/LiquidCrystal.h \
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/Print.h \
   lib/LiquidCrystal/Adafruit_MCP23008.h src/QuadraticEase.h \
-  src/EasingBase.h src/EasingConstants.h
+  src/EasingBase.h src/EasingConstants.h src/SineEase.h src/CubicEase.h
