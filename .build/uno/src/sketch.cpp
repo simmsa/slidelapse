@@ -620,7 +620,6 @@ const char* easingCurveName(byte input){
     }
 }
 /* }}} */
-
 /* yesOrNo -------------------------------------------------- {{{ */
 
 const char* yesOrNo(byte input){
@@ -635,6 +634,7 @@ const char* yesOrNo(byte input){
 }
 
 /* }}} */
+/* startTimelapse -------------------------------------------------- {{{ */
 
 void startTimelapse(){
     (timelapseDirection, numShots, time * 1000);
@@ -642,6 +642,9 @@ void startTimelapse(){
     lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
     return;
 }
+
+/* }}} */
+/* timelapse -------------------------------------------------- {{{ */
 
 void timelapse(byte dir, int shots, unsigned long time){
     int shotDelay = time / shots;
@@ -736,11 +739,15 @@ void timelapse(byte dir, int shots, unsigned long time){
     return;
 }
 
+/* }}} */
+/* showTimelapseProgress ---------------------------------------- {{{ */
+
 void showTimelapseProgress(int currentShot, int totalShots){
-    sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",( currentShot * 100 / totalShots));
+    sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
     lcdPrint(timelapseModeRunningTimelapseLineOne, timelapseModeRunningTimelapseLineTwo);
 }
 
+/* }}} */
 /* quadraticEase {{{ */
 void quadraticEase(int dir, int steps, float speed, unsigned long time){
     QuadraticEase quadEase;
@@ -775,6 +782,7 @@ void quadraticEase(int dir, int steps, float speed, unsigned long time){
     }
 }
 /* }}} */
+
 /* }}} */
 // Camera Functions {{{
 
@@ -993,24 +1001,24 @@ void secondaryMenuShow(int input){
 
 
 /* }}} */
-// Setup {{{
+/* Setup {{{ */
 
 void setup()
 {
-    //Stepper Pin Setup
+    /* Stepper Pin Setup */
     pinMode(DIR_PIN, OUTPUT);
     pinMode(STEP_PIN, OUTPUT);
     pinMode(SLEEP_PIN, OUTPUT);
     digitalWrite(SLEEP_PIN, HIGH);
 
-    //Serial
+    /* Serial */
     /* Serial.begin(9600); */
     /* Serial.print("Beginning Serial!"); */
 
-    //Camera Pin Setup
+    /* Camera Pin Setup */
     pinMode(SHUTTER_PIN, OUTPUT);
 
-    //LCD Pin Setup
+    /* LCD Pin Setup */
     lcd.begin(16, 2);
     lcd.print("   Slidelapse");
     lcd.setCursor(0, 1);
@@ -1018,10 +1026,10 @@ void setup()
     delay(3000);
     lcd.clear();
 
-    // Joystick Pin Setup
+    /* Joystick Pin Setup */
     pinMode(JOYSTICK_SELECT_PIN, INPUT_PULLUP);
 
-    //Switch Pin Setup
+    /* Switch Pin Setup */
     pinMode(MOTOR_SWITCH_PIN, INPUT);
     pinMode(END_SWITCH_PIN, INPUT);
 }

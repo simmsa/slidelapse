@@ -697,7 +697,7 @@ void timelapse(byte dir, int shots, unsigned long time){
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
 void showTimelapseProgress(int currentShot, int totalShots){
-    sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",( currentShot * 100 / totalShots));
+    sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
     lcdPrint(timelapseModeRunningTimelapseLineOne, timelapseModeRunningTimelapseLineTwo);
 }
 
