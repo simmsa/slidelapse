@@ -27,7 +27,7 @@ const char* easingCurveName(byte input);
 const char* yesOrNo(byte input);
 void startTimelapse();
 void timelapse(byte dir, int shots, unsigned long time);
-void showTimelapseProgress(int currentShot, int totalShots);
+void showTimelapseProgress(unsigned long currentShot, int totalShots);
 void quadraticEase(int dir, int steps, float speed, unsigned long time);
 void takePicture();
 bool selectTrigger(int duration);
@@ -637,7 +637,7 @@ const char* yesOrNo(byte input){
 /* startTimelapse -------------------------------------------------- {{{ */
 
 void startTimelapse(){
-    (timelapseDirection, numShots, time * 1000);
+    timelapse(timelapseDirection, numShots, time * 1000);
     timelapseMenuLocation = 1;
     lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
     return;
@@ -742,7 +742,7 @@ void timelapse(byte dir, int shots, unsigned long time){
 /* }}} */
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
-void showTimelapseProgress(int currentShot, int totalShots){
+void showTimelapseProgress(unsigned long currentShot, int totalShots){
     sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
     lcdPrint(timelapseModeRunningTimelapseLineOne, timelapseModeRunningTimelapseLineTwo);
 }
