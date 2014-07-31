@@ -1,29 +1,32 @@
-// Libraries {{{
+/* Libraries {{{ */
+
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include "QuadraticEase.h"
 #include "SineEase.h"
 #include "CubicEase.h"
+
 /* }}} */
 /* Pin Setup {{{ */
+
 /* Stepper Pin Setup */
 const byte DIR_PIN = 2;
 const byte STEP_PIN = 3;
 const byte SLEEP_PIN = 9;
 
-// Joystick Setup
+/* Joystick Setup */
 const byte JOYSTICK_X_PIN = 0; // Analog 0
 const byte JOYSTICK_Y_PIN = 1; // Analog 1
-const byte JOYSTICK_SELECT_PIN = 10; // Digital 8
+const byte JOYSTICK_SELECT_PIN = 10; // Digital 10
 
-// LCD Setup
+/* LCD Setup */
 LiquidCrystal lcd(0);
 
-// Camera Setup
+/* Camera Setup */
 const byte SHUTTER_PIN = 7;
 const byte FLASH_IN_PIN = 5;
 
-// Switch Setup
+/* Switch Setup */
 const byte MOTOR_SWITCH_PIN = 4;
 const byte END_SWITCH_PIN = 6;
 
@@ -31,36 +34,40 @@ const byte END_SWITCH_PIN = 6;
 /* Global Variables {{{ */
 
 /* Joystick Constants {{{ */
+
 const byte LEFT = 1;
 const byte RIGHT = 2;
 const byte UP = 3;
 const byte DOWN = 4;
 const byte NONE = 0;
-/* }}} */
 
-//Easing functions {{{
+/* }}} */
+/* Easing functions {{{ */
+
 const byte LINEAR = 1;
 const byte QUADRATIC = 2;
 const byte SINE = 3;
 const byte CUBIC = 4;
-/* }}} */
 
-// Easing curves {{{
+/* }}} */
+/* Easing curves {{{ */
+
 const byte EASEIN = 1;
 const byte EASEOUT = 2;
 const byte EASEINOUT = 3;
+
 /* }}} */
+/* Menu Strings {{{ */
 
-//Menu Strings {{{
+/* Main Menu Strings {{{ */
 
-//Main Menu Strings {{{
 char selectModeString[17] = "Select Mode:    ";
 char timelapseStringSelected[17] = "1.Timelapse    >";
 char commandStringSelected[17] = "2.Commander    >";
 char debugStringSelected[17] = "3.Debug        >";
-/* }}} */
 
-//Timelaspe Menu Strings {{{
+/* }}} */
+/* Timelaspe Menu Strings {{{ */
 char enteringTimelapseModeLineOne[17] = ">>> Timelapse   ";
 char enteringTimelapseModeLineTwo[17] = "Hold Sel to exit";
 
@@ -101,8 +108,8 @@ char timelapseModeRunningTimelapseLineTwo[17] = "";
 char timelapseModeCompletedLineOne[17] = "Timelapse Done  ";
 char timelapseModeCompletedLineTwo[17] = "Hold Sel to exit";
 /* }}} */
+/* Commander Menu Strings {{{ */
 
-//Commander Menu Strings {{{
 char enteringCommandModeLineOne[17] = ">>> Commander   ";
 char enteringCommandModeLineTwo[17] = "Hold Sel to exit";
 
@@ -110,9 +117,10 @@ char commandModeLineOne[17] = "  Command Mode  ";
 char commandModeLineTwoMotorToEnd[17] = "Motor <----> End";
 char commandModeLineTwoEndToMotor[17] = "End <----> Motor";
 char commandModeLineTwoChangingDirection[17] = "Reversing Dir <>";
-/* }}} */
 
-//Status Menu Strings {{{
+/* }}} */
+/* Status Menu Strings {{{ */
+
 char enteringDebugModeLineOne[17] = ">>> Debug Mode  ";
 char enteringDebutModeLineTwo[17] = "Hold Sel to exit";
 char debugLineOne[17] = "";
@@ -120,16 +128,21 @@ char debugLineTwo[17] = "";
 char switchOpen[2] = "O";
 char switchPressed[2] = "P";
 char switchError[2] = "X";
-/* }}} */
 
-//Error Strings {{{
+/* }}} */
+/* Error Strings {{{ */
+
 char genericErrorLineOne[17] = ">>> ERROR       ";
 char genericErrorLineTwo[17] = "Returning Home  ";
-/* }}} */
+
 /* }}} */
 
 /* }}} */
-//Joystick Functions {{{
+
+/* }}} */
+/* Joystick Functions {{{ */
+
+/* readJoystick -------------------------------------------------- {{{ */
 
 byte readJoystick(int buttonDelay){
     if (analogRead(JOYSTICK_X_PIN) > 600 ){
@@ -164,8 +177,11 @@ byte readJoystick(int buttonDelay){
         return NONE;
     }
 }
+
 /* }}} */
-// Timelapse Functions {{{
+
+/* }}} */
+/* Timelapse Functions {{{ */
 
 /* rotate {{{ */
 void rotate(int steps, byte speed){
@@ -184,6 +200,7 @@ void rotate(int steps, byte speed){
     }
 }
 /* }}} */
+/* dampRotate -------------------------------------------------- {{{ */
 
 void dampRotate(int steps, byte maxSpeed) {
     int dir = (steps > 0)? HIGH:LOW;
@@ -220,19 +237,22 @@ void dampRotate(int steps, byte maxSpeed) {
     }
 }
 
-int getSpeed(byte speed){
-    return (1 / (int(speed) / 100)) * 70;
-}
+/* }}} */
+/* sleepOn -------------------------------------------------- {{{ */
 
 void sleepOn(){
     digitalWrite(SLEEP_PIN, LOW);
 }
+
+/* }}} */
+/* sleepOff -------------------------------------------------- {{{ */
 
 void sleepOff(){
     digitalWrite(SLEEP_PIN, HIGH);
     delay(2);
 }
 
+/* }}} */
 /* findTrackLen {{{ */
 void findTrackLen(){
     unsigned long maxTrackLen = 0;
@@ -262,7 +282,6 @@ void findTrackLen(){
     }
 }
 /* }}} */
-
 /* commanderMode {{{ */
 void commanderMode(){
     lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
@@ -315,14 +334,12 @@ void commanderMode(){
     }
 }
 /* }}} End commanderMode */
-
 /* calcSpeed {{{ */
 byte calcSpeed(int input, int maxInput, byte maxOutput){
     //returns a byte proportional to the input / max
     return (maxOutput * input) / maxInput;
 }
 /* }}} */
-
 /* rotateDeg {{{ */
 /* void rotatedeg(float deg, float speed){ */
 /*     int dir = (deg > 0)? high:low; */
@@ -338,7 +355,6 @@ byte calcSpeed(int input, int maxInput, byte maxOutput){
 /*     } */
 /* } */
 /* }}} */
-
 /* Joystick Helper Functions {{{ */
 int joystickX(){
     return analogRead(JOYSTICK_X_PIN);
@@ -382,6 +398,7 @@ bool yLow(){
     return false;
 }
 /* }}} */
+/* Timelapse Menu Global Variables -------------------------------- {{{ */
 
 byte timelapseMenuLocation = 1;
 byte timelapseMenuMax = 10;
@@ -407,6 +424,7 @@ byte easingCurveMax = 3;
 byte timelapseDirection = 1;
 int minInterval = 1000; // 1 sec
 
+/* }}} */
 /* configureTimelapse {{{ */
 void configureTimelapse(){
     //Print current menu
@@ -439,7 +457,6 @@ void configureTimelapse(){
     }
 }
 /* }}} */
-
 /* incrementTimelapseMenu {{{ */
 void incrementTimelapseMenu(int input, int currentMenu, int counter){
     switch(currentMenu){
@@ -506,7 +523,6 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
     }
 }
 /* }}} */
-
 /* incrementVar {{{ */
 int incrementVar(int input, int counter){
     if (input > 0){
@@ -525,7 +541,6 @@ int incrementVar(int input, int counter){
     return 0;
 }
 /* }}} */
-
 /* easingFunctionName {{{ */
 const char* easingFunctionName(byte input){
     switch(input){
@@ -544,7 +559,6 @@ const char* easingFunctionName(byte input){
     }
 }
 /* }}} */
-
 /* easingCurveName {{{ */
 const char* easingCurveName(byte input){
     switch(input){
@@ -560,6 +574,7 @@ const char* easingCurveName(byte input){
     }
 }
 /* }}} */
+/* yesOrNo -------------------------------------------------- {{{ */
 
 const char* yesOrNo(byte input){
     switch(input){
@@ -572,19 +587,20 @@ const char* yesOrNo(byte input){
     }
 }
 
+/* }}} */
+/* startTimelapse -------------------------------------------------- {{{ */
+
 void startTimelapse(){
-    /* switch(easingFunction){ */
-    /*     case 1: //Linear */
-    /*         linear(timelapseDirection, numShots, time * 1000); */
-    /*         break; */
-    /* } */
-    linear(timelapseDirection, numShots, time * 1000);
+    (timelapseDirection, numShots, time * 1000);
     timelapseMenuLocation = 1;
     lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
     return;
 }
 
-void linear(byte dir, int shots, unsigned long time){
+/* }}} */
+/* timelapse -------------------------------------------------- {{{ */
+
+void timelapse(byte dir, int shots, unsigned long time){
     int shotDelay = time / shots;
     QuadraticEase quadEase;
     quadEase.setDuration(shots);
@@ -677,11 +693,15 @@ void linear(byte dir, int shots, unsigned long time){
     return;
 }
 
+/* }}} */
+/* showTimelapseProgress ---------------------------------------- {{{ */
+
 void showTimelapseProgress(int currentShot, int totalShots){
     sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",( currentShot * 100 / totalShots));
     lcdPrint(timelapseModeRunningTimelapseLineOne, timelapseModeRunningTimelapseLineTwo);
 }
 
+/* }}} */
 /* quadraticEase {{{ */
 void quadraticEase(int dir, int steps, float speed, unsigned long time){
     QuadraticEase quadEase;
@@ -716,13 +736,16 @@ void quadraticEase(int dir, int steps, float speed, unsigned long time){
     }
 }
 /* }}} */
+
 /* }}} */
 // Camera Functions {{{
+
 void takePicture(){
     digitalWrite(SHUTTER_PIN, HIGH);
     delay(150);
     digitalWrite(SHUTTER_PIN, LOW);
 }
+
 /* }}} */
 /* Event Functions {{{ */
 
@@ -750,7 +773,6 @@ bool selectTrigger(int duration){
     }
 }
 /* }}} */
-
 /* directionTrigger {{{ */
 unsigned long directionTimerStart = 0;
 int directionStatus = 512;
@@ -783,6 +805,7 @@ bool directionTrigger(unsigned long duration, int direction){
 
 /* }}} */
 /* LCD & Menu Functions {{{ */
+
 /* status {{{ */
 
 char* formattedSwitch(byte status){
@@ -823,7 +846,6 @@ void status(){
     return;
 }
 /* }}} end of status */
-
 /* joystickPosition {{{ */
 void joystickPosition(int buttonDelay){
     lcd.setCursor(0, 0);
@@ -834,7 +856,6 @@ void joystickPosition(int buttonDelay){
 }
 
 /* }}} */
-
 /* lcd Print {{{ */
 void lcdPrint(char* line1, char* line2){
     //Prints two 16 char lines to the lcd
@@ -848,7 +869,6 @@ void lcdPrint(char* line1, char* line2){
     lcd.print(line2);
 }
 /* }}} */
-
 /* menuOptions {{{ */
 char* menuOptions(int input){
     switch(input){
@@ -867,7 +887,6 @@ char* menuOptions(int input){
     }
 }
 /* }}} */
-
 /* menuShow {{{ */
 int currentMenuPosition = 1;
 int minMenuPosition = 1;
@@ -890,7 +909,6 @@ void menuShow(){
     return;
 }
 /* }}} */
-
 /* reflow {{{ */
 int reflow(int input, int minOutput, int maxOutput){
     if (input > maxOutput){
@@ -902,6 +920,7 @@ int reflow(int input, int minOutput, int maxOutput){
     }
 }
 /* }}} */
+/* secondaryMenuShow ---------------------------------------------- {{{ */
 
 void secondaryMenuShow(int input){
     int flashDelay = 2500;
@@ -930,23 +949,30 @@ void secondaryMenuShow(int input){
 }
 
 /* }}} */
-// Setup {{{
+
+/* }}} */
+/* Helper Functions ------------------------------------------------ {{{ */
+
+
+/* }}} */
+/* Setup {{{ */
+
 void setup()
 {
-    //Steppers
+    /* Stepper Pin Setup */
     pinMode(DIR_PIN, OUTPUT);
     pinMode(STEP_PIN, OUTPUT);
     pinMode(SLEEP_PIN, OUTPUT);
     digitalWrite(SLEEP_PIN, HIGH);
 
-    //Serial
-    Serial.begin(9600);
-    Serial.print("Beginning Serial!");
+    /* Serial */
+    /* Serial.begin(9600); */
+    /* Serial.print("Beginning Serial!"); */
 
-    //Camera Stuff
+    /* Camera Pin Setup */
     pinMode(SHUTTER_PIN, OUTPUT);
 
-    //LCD Stuff
+    /* LCD Pin Setup */
     lcd.begin(16, 2);
     lcd.print("   Slidelapse");
     lcd.setCursor(0, 1);
@@ -954,146 +980,21 @@ void setup()
     delay(3000);
     lcd.clear();
 
-    // Joystick Stuff
+    /* Joystick Pin Setup */
     pinMode(JOYSTICK_SELECT_PIN, INPUT_PULLUP);
 
-    //Switch setup
+    /* Switch Pin Setup */
     pinMode(MOTOR_SWITCH_PIN, INPUT);
     pinMode(END_SWITCH_PIN, INPUT);
 }
+
 /* }}} */
 /* Loop {{{ */
-void loop()
-{
-    /* Unused {{{ */
-    /* delay(5000); */
-    /* digitalWrite(led, HIGH); */
-    /* goButton.process(); */
 
-    /* if(buttonState == true){ */
-    /*     digitalWrite(led, HIGH); */
-    /*     if(stepperDirection % 4 == 0){ */
-    /*         rotate(1, .5); */
-    /*     } else { */
-    /*         rotate(-1, .5); */
-    /*         counter += 1; */
-    /*     } */
-    /*     /1* Serial.println(stepperDirection); *1/ */
-    /* } else { */
-    /*     digitalWrite(led, LOW); */
-    /*     /1* Serial.println(stepperDirection); *1/ */
-    /*     Serial.println("The counter is: "); */
-    /*     Serial.print(counter); */
-    /*     Serial.print("\n"); */
- /* } */
- 
-  /* delay(5000); */
-  /* float steps = 300; */
-  /* double coefficient = trackLength / (steps * steps); */
-  /* int move = 0; */
-
-      /* for(double x = 1; x <= steps; x++){ */
-      /*   double position = coefficient * (x * x); */
-      /*   double previous_position = coefficient * ((x - 1) * (x - 1)); */
-      /*   move = int(position - previous_position); */
-      /*   rotate(move * dir, .1); */
-      /*   lcd.clear(); */
-      /*   lcd.setBacklight(LOW); */
-      /*   lcd.print(int(x)); */
-      /*   /1* Serial.println(x); *1/ */
-      /*   /1* Serial.println(position); *1/ */
-      /*   /1* Serial.println(previous_position); *1/ */
-      /*   /1* Serial.println(move); *1/ */
-      /*   digitalWrite(SHUTTER_PIN, HIGH); */
-      /*   digitalWrite(led, HIGH); */
-      /*   delay(150); */
-      /*   digitalWrite(SHUTTER_PIN, LOW); */
-      /*   digitalWrite(led, LOW); */
-      /*   delay(4500); */
-        /* } */
-        /* }}} */
-    /* status(); */
-    /* joystickPosition(100); */
-    /* int num = 1; */
-    /* String numInt = String(num); */
-    /* numInt += "."; */
-    /* lcdPrint("Andrew", numInt); */
+void loop(){
     menuShow();
-    /* rotate(1000, .1); */
-    /* delay(1000); */
-    /* rotate(-1000, .1); */
-    /* delay(1000); */
-        /* int xpos = analogRead(A0); */
-        /* int ypos = analogRead(A1); */
-
-        /*     lcd.setBacklight(HIGH); */
-        /*     lcd.print("X:"); */
-        /*     lcd.setCursor(3, 0); */
-        /*     if (xpos < 1000){ */
-        /*         lcd.print(xpos); */
-        /*         lcd.print(" "); */
-        /*     } else if (xpos < 100){ */
-        /*         lcd.print(xpos); */
-        /*         lcd.print("  "); */
-        /*     } else if (xpos < 10){ */
-        /*         lcd.print(xpos); */
-        /*         lcd.print("    "); */
-        /*     } else { */
-        /*         lcd.print(xpos); */
-        /*     } */
-        /*     lcd.setCursor(8, 0); */
-        /*     lcd.print("Sel:"); */
-        /*     lcd.setCursor(12, 0); */
-        /*     if (digitalRead(JOYSTICK_SELECT_PIN) == LOW){ */
-        /*         lcd.print("P"); */
-        /*     } else if (digitalRead(JOYSTICK_SELECT_PIN) == HIGH){ */
-        /*         lcd.print("O"); */
-        /*     } else { */
-        /*         lcd.print("X"); */
-        /*     } */
-        /*     lcd.setCursor(0, 1); */
-        /*     lcd.print("Y:"); */
-        /*     lcd.setCursor(3, 1); */
-        /*     lcd.print(ypos); */
-        /*     lcd.setCursor(8, 1); */
-        /*     lcd.print("M:"); */
-        /*         if (digitalRead(MOTOR_SWITCH_PIN) == HIGH){ */
-        /*             lcd.print("P"); */
-        /*         } else { */
-        /*             lcd.print("O"); */
-        /*         } */
-        /*     lcd.print(" E:"); */
-        /*         if(digitalRead(END_SWITCH_PIN) == HIGH){ */
-        /*             lcd.print("P"); */
-        /*         } else { */
-        /*             lcd.print("O"); */
-        /*         } */
-        /*     lcd.print(" "); */
-        /* if (xpos > 516){ */
-        /*     float num_positions = 1023 - 516; */
-        /*     float pos_speed = (float(xpos) - 516.0) / 516.0; */
-        /*     float max_speed = 0.5; */
-        /*     float speed = pos_speed * max_speed; */
-        /*     rotate(1, speed); */
-        /* } else if (xpos < 500){ */
-        /*     float pos_speed = (500.0 - float(xpos) + 1.0) / 501; */
-        /*     float max_speed = 0.5; */
-        /*     float speed = pos_speed * max_speed; */
-        /*     rotate(-1, speed); */
-        /* } */
-        /* joystick_x_pos = xpos; */
-        /* joystick_y_pos = ypos; */
-        /* /1* delay(10); *1/ */
-    /* } */
-    /* /1* delay(100); *1/ */
-    
-    /* delay(5000); */
-
-    /* quadraticEase(dir, 300, .05, 300); */
-
-  /* float reverse_steps = 400; */
-  /* dir = dir * -1; */
 }
+
 /* }}} */
 /* Folding Setup {{{ */
 // vim:foldmethod=marker:foldlevel=0
