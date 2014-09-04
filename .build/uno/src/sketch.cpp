@@ -1,9 +1,13 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
 #include "QuadraticEase.h"
 #include "SineEase.h"
 #include "CubicEase.h"
+void directionChanger();
+const char* directionSettings(int setting);
+const char* directionSelected(int choice);
 byte readJoystick(int buttonDelay);
 void rotate(int steps, byte speed);
 void dampRotate(int steps, byte maxSpeed);
@@ -48,6 +52,7 @@ void loop();
 
 //#include <Wire.h>
 //#include <LiquidCrystal.h>
+//#include <EEPROM.h>
 //#include "QuadraticEase.h"
 //#include "SineEase.h"
 //#include "CubicEase.h"
@@ -110,7 +115,8 @@ const byte EASEINOUT = 3;
 char selectModeString[17] = "Select Mode:    ";
 char timelapseStringSelected[17] = "1.Timelapse    >";
 char commandStringSelected[17] = "2.Commander    >";
-char debugStringSelected[17] = "3.Debug        >";
+char directionStringSelected[17] = "3. Direction   >";
+char debugStringSelected[17] = "4.Debug        >";
 
 /* }}} */
 /* Timelapse Menu Strings {{{ */
@@ -177,10 +183,19 @@ char commandModeLineTwoEndToMotor[17] = "End <----> Motor";
 char commandModeLineTwoChangingDirection[17] = "Reversing Dir <>";
 
 /* }}} */
+/* Direction Menu Strings ---------------------------------------- {{{ */
+
+char enteringDirectionModeLineOne[17] = ">>> Direction   ";
+char enteringDirectionModeLineTwo[17] = "Hold Sel to exit";
+
+char directionModeLineOne[17] = "Set EEPROM Dir: ";
+char directionModeLineTwo[17] = "";
+
+/* }}} */
 /* Status Menu Strings {{{ */
 
 char enteringDebugModeLineOne[17] = ">>> Debug Mode  ";
-char enteringDebutModeLineTwo[17] = "Hold Sel to exit";
+char enteringDebugModeLineTwo[17] = "Hold Sel to exit";
 char debugLineOne[17] = "";
 char debugLineTwo[17] = "";
 char switchOpen[2] = "O";
@@ -194,6 +209,56 @@ char genericErrorLineOne[17] = ">>> ERROR       ";
 char genericErrorLineTwo[17] = "Returning Home  ";
 
 /* }}} */
+
+/* }}} */
+/* EEPROM -------------------------------------------------- {{{ */
+
+byte EEPROM_DIRECTION_LOC = 1;
+byte EEPROM_DIRECTION = 1;
+
+    void directionChanger(){
+        byte instanceEEDir = EEPROM_DIRECTION;
+        // Print Current Status
+        sprintf(directionModeLineTwo, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
+        lcdPrint(directionModeLineOne, directionModeLineTwo);
+
+        while(selectTrigger(1000)){
+            if (yHigh() || yLow()){
+                delay(150);
+                if(yHigh()){
+                    instanceEEDir += 1;
+                    instanceEEDir = reflow(instanceEEDir, 1, 2);
+                }
+                if(yLow()){
+                    instanceEEDir -= 1;
+                    instanceEEDir = reflow(instanceEEDir, 1, 2);
+                }
+                sprintf(directionModeLineTwo, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
+                lcdPrint(directionModeLineOne, directionModeLineTwo);
+            }
+        }
+        if (instanceEEDir != EEPROM_DIRECTION){
+            EEPROM_DIRECTION = instanceEEDir;
+            //Write to EEProm
+            EEPROM.write(EEPROM_DIRECTION_LOC, EEPROM_DIRECTION);
+        }
+    }
+
+    const char* directionSettings(int setting){
+        if (setting == 1){
+            return "1. Setting A";
+        }else if (setting == 2){
+            return "2. Setting B";
+        }
+    }
+
+const char* directionSelected(int choice){
+    if (choice == EEPROM_DIRECTION){
+        return "*";
+    } else {
+        return " ";
+    }
+}
 
 /* }}} */
 
@@ -344,6 +409,9 @@ void findTrackLen(){
 void commanderMode(){
     lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
     int direction = 1; // Odd is motor to end, Even is end to motor
+    if (EEPROM_DIRECTION == 2){
+        direction += 1;
+    }
     while (selectTrigger(1000)){
         int xpos = analogRead(JOYSTICK_X_PIN);
         int ypos = analogRead(JOYSTICK_Y_PIN);
@@ -474,7 +542,7 @@ unsigned long currentDelay = 10;
 byte sleep = 1;
 byte LCDOn = 1;
 byte speed = 25;
-long currentTime = 1800; //30 min
+long currentTime = 600; //10 min
 long minTime = 60; // 1 min
 long maxTime = 86400; // 24hrs
 byte easingFunction = LINEAR;
@@ -727,10 +795,11 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     cubicTimeEase.setTotalChangeInPosition(instanceTime * 1000);
     unsigned long timeEaseDelay = 0;
 
-    long stepInterval = trackLen / shots;
+    long baseStepInterval = trackLen / shots;
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
     byte counter = 0;
+    long stepInterval = 0;
 
     // Pre Delay
     delay(currentDelay * 1000);
@@ -740,6 +809,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     }
 
     for (int i = 1; i <= shots; i++){
+        stepInterval = baseStepInterval;
         stepStart = millis();
         showTimelapseProgress(i, shots);
         takePicture();
@@ -795,6 +865,16 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         if (dir > 1){
             stepInterval *= -1;
         }
+        Serial.println("Pre EEPROM: ");
+        Serial.println(stepInterval);
+        // Account for random direction changes
+        if(EEPROM_DIRECTION == 2){
+            stepInterval *= -1;
+        }
+
+        Serial.println("Post EEPROM: ");
+        Serial.println(stepInterval);
+        Serial.println();
         dampRotate(stepInterval, 15);
         /* turn on sleep */
         if(sleep == 1){
@@ -1054,6 +1134,9 @@ char* menuOptions(int input){
             return commandStringSelected;
             break;
         case 3:
+            return directionStringSelected;
+            break;
+        case 4:
             return debugStringSelected;
             break;
         default:
@@ -1065,7 +1148,7 @@ char* menuOptions(int input){
 /* menuShow {{{ */
 int currentMenuPosition = 1;
 int minMenuPosition = 1;
-int maxMenuPosition = 3;
+int maxMenuPosition = 4;
 
 void menuShow(){
     while (directionTrigger(50, RIGHT) == true){
@@ -1100,18 +1183,23 @@ int reflow(int input, int minOutput, int maxOutput){
 void secondaryMenuShow(int input){
     int flashDelay = 2500;
     switch(input){
-        case 1:
+        case 1: // Timelapse
             lcdPrint(enteringTimelapseModeLineOne, enteringTimelapseModeLineTwo);
             delay(flashDelay);
             configureTimelapse();
             break;
-        case 2:
+        case 2: // Command
             lcdPrint(enteringCommandModeLineOne, enteringCommandModeLineTwo);
             delay(flashDelay);
             commanderMode();
             break;
-        case 3:
-            lcdPrint(enteringDebugModeLineOne, enteringDebutModeLineTwo);
+        case 3: // Direction
+            lcdPrint(enteringDirectionModeLineOne, enteringDirectionModeLineTwo);
+            delay(flashDelay);
+            directionChanger();
+            break;
+        case 4: // Debug
+            lcdPrint(enteringDebugModeLineOne, enteringDebugModeLineTwo);
             delay(flashDelay);
             status();
             break;
@@ -1154,6 +1242,10 @@ void setup()
     lcd.print(" Version 0.5.0");
     delay(3000);
     lcd.clear();
+
+    /* EEPROM Direction Read */
+    /* EEPROM.write(EEPROM_DIRECTION_LOC, 2); */
+    EEPROM_DIRECTION = EEPROM.read(EEPROM_DIRECTION_LOC);
 
     /* Joystick Pin Setup */
     pinMode(JOYSTICK_SELECT_PIN, INPUT_PULLUP);

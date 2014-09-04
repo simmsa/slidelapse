@@ -13,5 +13,7 @@
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/Stream.h \
   lib/LiquidCrystal/LiquidCrystal.h \
   /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino/Print.h \
-  lib/LiquidCrystal/Adafruit_MCP23008.h src/QuadraticEase.h \
-  src/EasingBase.h src/EasingConstants.h src/SineEase.h src/CubicEase.h
+  lib/LiquidCrystal/Adafruit_MCP23008.h \
+  /Applications/Arduino.app/Contents/Resources/Java/libraries/EEPROM/EEPROM.h \
+  src/QuadraticEase.h src/EasingBase.h src/EasingConstants.h \
+  src/SineEase.h src/CubicEase.h
