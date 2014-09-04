@@ -92,6 +92,9 @@ char timelapseModeLongestShutterLineTwo[17] = "";
 char timelapseModeSleepBetweenShotsLineOne[17] = "Sleep btw shots ";
 char timelapseModeSleepBetweenShotsLineTwo[17] = "";
 
+char timelapseModeLCDLineOne[17] = "Backlight on?:  ";
+char timelapseModeLCDLineTwo[17] = "";
+
 char timelapseModeEasingFunctionLineOne[17] = "Slide Ease Func:";
 char timelapseModeEasingFunctionLineTwo[17] = "";
 
@@ -410,7 +413,7 @@ bool yLow(){
 /* Timelapse Menu Global Variables -------------------------------- {{{ */
 
 byte timelapseMenuLocation = 1;
-byte timelapseMenuMax = 13;
+byte timelapseMenuMax = 14;
 byte timelapseMenuMin = 1;
 unsigned int trackLen = 34800;
 int numShots = 240;
@@ -423,6 +426,7 @@ unsigned long minDelay = 1; // Seconds
 unsigned long maxDelay = 3600; // Seconds
 unsigned long currentDelay = 10;
 byte sleep = 1;
+byte LCDOn = 1;
 byte speed = 25;
 long currentTime = 1800; //30 min
 long minTime = 60; // 1 min
@@ -521,31 +525,37 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             sprintf(timelapseModeSleepBetweenShotsLineTwo, "%s             ", yesOrNo(sleep));
             lcdPrint(timelapseModeSleepBetweenShotsLineOne, timelapseModeSleepBetweenShotsLineTwo);
             break;
-        case 7: //Easing Function
+        case 7: // LCD on / off
+            LCDOn += incrementVar(input, 0);
+            LCDOn = reflow(LCDOn, 1, 2);
+            sprintf(timelapseModeLCDLineTwo, "%s             ", yesOrNo(LCDOn));
+            lcdPrint(timelapseModeLCDLineOne, timelapseModeLCDLineTwo);
+            break;
+        case 8: //Easing Function
             easingFunction -= incrementVar(input, 0);
             easingFunction = reflow(easingFunction, easingFunctionMin, easingFunctionMax);
             sprintf(timelapseModeEasingFunctionLineTwo, "%s       ", easingFunctionName(easingFunction));
             lcdPrint(timelapseModeEasingFunctionLineOne, timelapseModeEasingFunctionLineTwo);
             break;
-        case 8: //Easing Curve
+        case 9: //Easing Curve
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
             sprintf(timelapseModeEasingCurveLineTwo, "%s    ", easingCurveName(easingCurve));
             lcdPrint(timelapseModeEasingCurveLineOne, timelapseModeEasingCurveLineTwo);
             break;
-        case 9: // Time Easing Function
+        case 10: // Time Easing Function
             timingEasingFunction -= incrementVar(input, 0);
             timingEasingFunction = reflow(timingEasingFunction, timingEasingFunctionMin, timingEasingFunctionMax);
             sprintf(timelapseModeTimeEasingFunctionLineTwo, "%s       ", easingFunctionName(timingEasingFunction));
             lcdPrint(timelapseModeTimeEasingFunctionLineOne, timelapseModeTimeEasingFunctionLineTwo);
             break;
-        case 10: //Time Easing Curve
+        case 11: //Time Easing Curve
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
             sprintf(timelapseModeTimeEasingCurveLineTwo, "%s    ", easingCurveName(timingEasingCurve));
             lcdPrint(timelapseModeTimeEasingCurveLineOne, timelapseModeTimeEasingCurveLineTwo);
             break;
-        case 11://Direction
+        case 12://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
@@ -557,10 +567,10 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
                 lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
             }
             break;
-        case 12: //
+        case 13: //
             lcdPrint("Move Right to   ", "start timelapse>");
             break;
-        case 13:
+        case 14:
             lcdPrint("Starting TL...  ", "Sel to cancel   ");
             /* delay(1000); */
             startTimelapse();
@@ -678,6 +688,10 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 
     // Pre Delay
     delay(currentDelay * 1000);
+
+    if (LCDOn == 2){
+        lcd.setBacklight(LOW);
+    }
 
     for (int i = 1; i <= shots; i++){
         stepStart = millis();
@@ -803,6 +817,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     /* if(sleep == 1){ */
     /*     sleepOn(); */
     /* } */
+    lcd.setBacklight(HIGH);
     sleepOff();
     return;
 }
