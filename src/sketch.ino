@@ -410,7 +410,7 @@ bool yLow(){
 /* Timelapse Menu Global Variables -------------------------------- {{{ */
 
 byte timelapseMenuLocation = 1;
-byte timelapseMenuMax = 10;
+byte timelapseMenuMax = 13;
 byte timelapseMenuMin = 1;
 unsigned int trackLen = 34800;
 int numShots = 240;
@@ -436,7 +436,7 @@ byte easingCurveMax = 3;
 byte timingEasingFunction = LINEAR;
 byte timingEasingFunctionMin = 1;
 byte timingEasingFunctionMax = 4;
-byte timingEasingCurve = LINEAR;
+byte timingEasingCurve = EASEIN;
 byte timingEasingCurveMin = 1;
 byte timingEasingCurveMax = 3;
 byte timelapseDirection = 2;
@@ -533,7 +533,19 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             sprintf(timelapseModeEasingCurveLineTwo, "%s    ", easingCurveName(easingCurve));
             lcdPrint(timelapseModeEasingCurveLineOne, timelapseModeEasingCurveLineTwo);
             break;
-        case 9://Direction
+        case 9: // Time Easing Function
+            timingEasingFunction -= incrementVar(input, 0);
+            timingEasingFunction = reflow(timingEasingFunction, timingEasingFunctionMin, timingEasingFunctionMax);
+            sprintf(timelapseModeTimeEasingFunctionLineTwo, "%s       ", easingFunctionName(timingEasingFunction));
+            lcdPrint(timelapseModeTimeEasingFunctionLineOne, timelapseModeTimeEasingFunctionLineTwo);
+            break;
+        case 10: //Time Easing Curve
+            timingEasingCurve -= incrementVar(input, 0);
+            timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
+            sprintf(timelapseModeTimeEasingCurveLineTwo, "%s    ", easingCurveName(timingEasingCurve));
+            lcdPrint(timelapseModeTimeEasingCurveLineOne, timelapseModeTimeEasingCurveLineTwo);
+            break;
+        case 11://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
@@ -545,10 +557,10 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
                 lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
             }
             break;
-        case 10: //
+        case 12: //
             lcdPrint("Move Right to   ", "start timelapse>");
             break;
-        case 11:
+        case 13:
             lcdPrint("Starting TL...  ", "Sel to cancel   ");
             /* delay(1000); */
             startTimelapse();
@@ -624,7 +636,7 @@ const char* yesOrNo(byte input){
 /* startTimelapse -------------------------------------------------- {{{ */
 
 void startTimelapse(){
-    timelapse(timelapseDirection, numShots, currentTime * 1000);
+    timelapse(timelapseDirection, numShots, currentTime);
     timelapseMenuLocation = 1;
     lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
     return;
@@ -634,7 +646,9 @@ void startTimelapse(){
 /* timelapse -------------------------------------------------- {{{ */
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
-    int shotDelay = instanceTime / shots;
+    int shotDelay = instanceTime * 1000 / shots;
+
+    // Slider Easing
     QuadraticEase quadEase;
     quadEase.setDuration(shots);
     quadEase.setTotalChangeInPosition(trackLen);
@@ -644,7 +658,20 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     CubicEase cubicEase;
     cubicEase.setDuration(shots);
     cubicEase.setTotalChangeInPosition(trackLen);
-    int stepInterval = trackLen / shots;
+
+    // Time Easing
+    QuadraticEase quadTimeEase;
+    quadTimeEase.setDuration(shots);
+    quadTimeEase.setTotalChangeInPosition(instanceTime * 1000);
+    SineEase sineTimeEase;
+    sineTimeEase.setDuration(shots);
+    sineTimeEase.setTotalChangeInPosition(instanceTime * 1000);
+    CubicEase cubicTimeEase;
+    cubicTimeEase.setDuration(shots);
+    cubicTimeEase.setTotalChangeInPosition(instanceTime * 1000);
+    unsigned long timeEaseDelay = 0;
+
+    long stepInterval = trackLen / shots;
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
     byte counter = 0;
@@ -663,39 +690,39 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
             case QUADRATIC:
                 switch(easingCurve){
                     case EASEIN:
-                        stepInterval = int(quadEase.easeIn(i) - quadEase.easeIn(i - 1));
+                        stepInterval = long(quadEase.easeIn(i) - quadEase.easeIn(i - 1));
                         break;
                     case EASEOUT:
-                        stepInterval = int(quadEase.easeOut(i) - quadEase.easeOut(i - 1));
+                        stepInterval = long(quadEase.easeOut(i) - quadEase.easeOut(i - 1));
                         break;
                     case EASEINOUT:
-                        stepInterval = int(quadEase.easeInOut(i) - quadEase.easeInOut(i - 1));
+                        stepInterval = long(quadEase.easeInOut(i) - quadEase.easeInOut(i - 1));
                         break;
                 }
                 break;
             case SINE:
                 switch(easingCurve){
                     case EASEIN:
-                        stepInterval = int(sineEase.easeIn(i) - sineEase.easeIn(i - 1));
+                        stepInterval = long(sineEase.easeIn(i) - sineEase.easeIn(i - 1));
                         break;
                     case EASEOUT:
-                        stepInterval = int(sineEase.easeOut(i) - sineEase.easeOut(i - 1));
+                        stepInterval = long(sineEase.easeOut(i) - sineEase.easeOut(i - 1));
                         break;
                     case EASEINOUT:
-                        stepInterval = int(sineEase.easeInOut(i) - sineEase.easeInOut(i - 1));
+                        stepInterval = long(sineEase.easeInOut(i) - sineEase.easeInOut(i - 1));
                         break;
                 }
                 break;
             case CUBIC:
                 switch(easingCurve){
                     case EASEIN:
-                        stepInterval = int(cubicEase.easeIn(i) - cubicEase.easeIn(i - 1));
+                        stepInterval = long(cubicEase.easeIn(i) - cubicEase.easeIn(i - 1));
                         break;
                     case EASEOUT:
-                        stepInterval = int(cubicEase.easeOut(i) - cubicEase.easeOut(i - 1));
+                        stepInterval = long(cubicEase.easeOut(i) - cubicEase.easeOut(i - 1));
                         break;
                     case EASEINOUT:
-                        stepInterval = int(cubicEase.easeInOut(i) - cubicEase.easeInOut(i - 1));
+                        stepInterval = long(cubicEase.easeInOut(i) - cubicEase.easeInOut(i - 1));
                         break;
                 }
                 break;
@@ -722,8 +749,55 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
             counter = 0;
         }
         stepLen = millis() - stepStart;
-        if (stepLen < shotDelay){
-            delay(shotDelay - stepLen);
+        switch(timingEasingFunction){
+            case LINEAR:
+                /* delay((shotDelay * 1000) - stepLen); */
+                // Shot delay already calculated
+                break;
+            case QUADRATIC:
+                switch(timingEasingCurve){
+                    case EASEIN:
+                        shotDelay = quadTimeEase.easeIn(i) - quadTimeEase.easeIn(i - 1);
+                        break;
+                    case EASEOUT:
+                        shotDelay = quadTimeEase.easeOut(i) - quadTimeEase.easeOut(i - 1);
+                        break;
+                    case EASEINOUT:
+                        shotDelay = quadTimeEase.easeInOut(i) - quadTimeEase.easeInOut(i - 1);
+                        break;
+                }
+                break;
+            case SINE:
+                switch(timingEasingCurve){
+                    case EASEIN:
+                        shotDelay = sineTimeEase.easeIn(i) - sineTimeEase.easeIn(i - 1);
+                        break;
+                    case EASEOUT:
+                        shotDelay = sineTimeEase.easeOut(i) - sineTimeEase.easeOut(i - 1);
+                        break;
+                    case EASEINOUT:
+                        shotDelay = sineTimeEase.easeInOut(i) - sineTimeEase.easeInOut(i - 1);
+                        break;
+                }
+                break;
+            case CUBIC:
+                switch(timingEasingCurve){
+                    case EASEIN:
+                        shotDelay = cubicTimeEase.easeIn(i) - cubicTimeEase.easeIn(i - 1);
+                        break;
+                    case EASEOUT:
+                        shotDelay = cubicTimeEase.easeOut(i) - cubicTimeEase.easeOut(i - 1);
+                        break;
+                    case EASEINOUT:
+                        shotDelay = cubicTimeEase.easeInOut(i) - cubicTimeEase.easeInOut(i - 1);
+                        break;
+                }
+                break;
+        }
+        /* Serial.print(shotDelay); */
+        /* Serial.print("\n"); */
+        if (stepLen < (shotDelay)){
+            delay((shotDelay) - stepLen);
         }
     }
     /* if(sleep == 1){ */
@@ -1006,8 +1080,8 @@ void setup()
     digitalWrite(SLEEP_PIN, HIGH);
 
     /* Serial */
-    /* Serial.begin(9600); */
-    /* Serial.print("Beginning Serial!"); */
+    Serial.begin(9600);
+    Serial.print("Beginning Serial!");
 
     /* Camera Pin Setup */
     pinMode(SHUTTER_PIN, OUTPUT);
