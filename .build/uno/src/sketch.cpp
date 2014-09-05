@@ -846,16 +846,11 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         if (dir > 1){
             stepInterval *= -1;
         }
-        Serial.println("Pre EEPROM: ");
-        Serial.println(stepInterval);
         // Account for random direction changes
         if(EEPROM_DIRECTION == 2){
             stepInterval *= -1;
         }
 
-        Serial.println("Post EEPROM: ");
-        Serial.println(stepInterval);
-        Serial.println();
         dampRotate(stepInterval, 15);
         /* turn on sleep */
         if(sleep == 1){
@@ -915,8 +910,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                 }
                 break;
         }
-        /* Serial.print(shotDelay); */
-        /* Serial.print("\n"); */
         if (stepLen < (shotDelay)){
             delay((shotDelay) - stepLen);
         }
@@ -1491,8 +1484,8 @@ void setup()
     digitalWrite(SLEEP_PIN, HIGH);
 
     /* Serial */
-    Serial.begin(9600);
-    Serial.print("Beginning Serial!");
+    /* Serial.begin(9600); */
+    /* Serial.print("Beginning Serial!"); */
 
     /* Camera Pin Setup */
     pinMode(SHUTTER_PIN, OUTPUT);
