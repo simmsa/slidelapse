@@ -994,7 +994,7 @@ byte realtimeDirection = 1;
 /* configureRealtime {{{ */
 void configureRealtime(){
     //Print current menu
-    incrementTimelapseMenu(0, realtimeMenuLocation, 0);
+    incrementRealtimeMenu(0, realtimeMenuLocation, 0);
     int counter = 0;
     while(selectTrigger(1000)){
         int buttonDelay = 150;
@@ -1004,18 +1004,18 @@ void configureRealtime(){
             if (xLow()){
                 realtimeMenuLocation = reflow(realtimeMenuLocation - 1, realtimeMenuMin, realtimeMenuMax);
 
-                incrementTimelapseMenu(0, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(0, realtimeMenuLocation, counter);
             } else if (xHigh()){
                 realtimeMenuLocation = reflow(realtimeMenuLocation + 1, realtimeMenuMin, realtimeMenuMax);
-                incrementTimelapseMenu(0, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(0, realtimeMenuLocation, counter);
             }
         } else if (yHigh() || yLow()){
             delay(buttonDelay);
             counter += 1;
             if (yLow()){
-                incrementTimelapseMenu(-1, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(-1, realtimeMenuLocation, counter);
             } else if (yHigh()){
-                incrementTimelapseMenu(1, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(1, realtimeMenuLocation, counter);
             }
         } else {
             counter = 0;
