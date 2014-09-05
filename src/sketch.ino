@@ -159,6 +159,20 @@ char genericErrorLineOne[17] = ">>> ERROR       ";
 char genericErrorLineTwo[17] = "Returning Home  ";
 
 /* }}} */
+/* Realtime Menu Strings ---------------------------------------- {{{ */
+
+char realtimeModeSpeedLineOne[17] = "Movement Speed: ";
+char realtimeModeSpeedLineTwo[17] = "";
+
+char realtimeModeDelayLineTwo[17] = "";
+
+char realtimeModeEasingFunctionLineOne[17] = "RT Ease Func:   ";
+char realtimeModeEasingFunctionLineTwo[17] = "";
+
+char realtimeModeEasingCurveLineOne[17] = "RT Ease Curve:  ";
+char realtimeModeEasingCurveLineTwo[17] = "";
+
+/* }}} */
 
 /* }}} */
 /* EEPROM -------------------------------------------------- {{{ */
@@ -855,6 +869,16 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 }
 
 /* }}} */
+/* startTimelapse -------------------------------------------------- {{{ */
+
+void startTimelapse(){
+    timelapse(timelapseDirection, numShots, currentTime);
+    timelapseMenuLocation = 1;
+    lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
+    return;
+}
+
+/* }}} */
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
 void showTimelapseProgress(unsigned long currentShot, int totalShots){
@@ -896,6 +920,231 @@ void quadraticEase(int dir, int steps, float speed, unsigned long time){
         }
     }
 }
+/* }}} */
+
+/* }}} */
+/* Realtime Movements ------------------------------------------ {{{ */
+
+/* Realtime Menu Global Variables -------------------------------- {{{ */
+
+byte realtimeMenuLocation = 1;
+byte realtimeMenuMax = 7;
+byte realtimeMenuMin = 1;
+unsigned int trackLen = 34800;
+int realtimeNumShots = 500;
+unsigned long realtimeMinDelay = 1; // Seconds
+unsigned long realtimeMaxDelay = 3600; // Seconds
+unsigned long realtimeCurrentDelay = 10;
+byte realtimeSpeed = 25;
+byte realtimeMaxSpeed = 100;
+byte realtimeMinSpeed = 1;
+byte realtimeEasingFunction = LINEAR;
+byte realtimeEasingFunctionMin = 1;
+byte realtimeEasingFunctionMax = 4;
+byte realtimeEasingCurve = EASEIN;
+byte realtimeEasingCurveMin = 1;
+byte realtimeEasingCurveMax = 3;
+byte realtimeDirection = 1;
+
+/* }}} */
+/* configureTimelapse {{{ */
+void configureTimelapse(){
+    //Print current menu
+    incrementTimelapseMenu(0, timelapseMenuLocation, 0);
+    int counter = 0;
+    while(selectTrigger(1000)){
+        int buttonDelay = 150;
+        if (xHigh() || xLow()){
+            delay(buttonDelay);
+            counter += 1;
+            if (xLow()){
+                timelapseMenuLocation = reflow(timelapseMenuLocation - 1, timelapseMenuMin, timelapseMenuMax);
+
+                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+            } else if (xHigh()){
+                timelapseMenuLocation = reflow(timelapseMenuLocation + 1, timelapseMenuMin, timelapseMenuMax);
+                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+            }
+        } else if (yHigh() || yLow()){
+            delay(buttonDelay);
+            counter += 1;
+            if (yLow()){
+                incrementTimelapseMenu(-1, timelapseMenuLocation, counter);
+            } else if (yHigh()){
+                incrementTimelapseMenu(1, timelapseMenuLocation, counter);
+            }
+        } else {
+            counter = 0;
+        }
+    }
+}
+/* }}} */
+/* incrementTimelapseMenu {{{ */
+void incrementTimelapseMenu(int input, int currentMenu, int counter){
+    switch(currentMenu){
+        case 1: //Speed
+            realtimeSpeed = incrementVar(input, counter);
+            realtimeSpeed = reflow(realtimeSpeed, realtimeMinSpeed, realtimeMaxSpeed);
+            sprintf(realtimeModeSpeedLineTwo, "%d              ", realtimeSpeed);
+            lcdPrint(realtimeModeSpeedLineOne, realtimeModeSpeedLineTwo);
+            break;
+        case 2: // Start Delay {{{
+            if (realtimeCurrentDelay < 60){
+                realtimeCurrentDelay += incrementVar(input, counter);
+            } else {
+                realtimeCurrentDelay += incrementVar(input, counter) * 60;
+            }
+            realtimeCurrentDelay = reflow(realtimeCurrentDelay, realtimeMinDelay, realtimeMaxDelay);
+
+            if (realtimeCurrentDelay < 60){
+                sprintf(realtimeModeDelayLineTwo, "%d seconds   ", realtimeCurrentDelay);
+            } else {
+                sprintf(realtimeModeDelayLineTwo, "%d minutes   ", realtimeCurrentDelay / 60);
+            }
+            lcdPrint(timelapseModeDelayLineOne, timelapseModeDelayLineTwo);
+            break; // }}}
+        case 3: //Easing Function
+            realtimeEasingFunction -= incrementVar(input, 0);
+            realtimeEasingFunction = reflow(realtimeEasingFunction, realtimeEasingFunctionMin, realtimeEasingFunctionMax);
+            sprintf(realtimeModeEasingFunctionLineTwo, "%s       ", easingFunctionName(realtimeEasingFunction));
+            lcdPrint(realtimeModeEasingFunctionLineOne, realtimeModeEasingFunctionLineTwo);
+            break;
+        case 4: //Easing Curve
+            realtimeEasingCurve -= incrementVar(input, 0);
+            realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
+            sprintf(realtimeModeEasingCurveLineTwo, "%s    ", easingCurveName(realtimeEasingCurve));
+            lcdPrint(realtimeModeEasingCurveLineOne, realtimeModeEasingCurveLineTwo);
+            break;
+        case 5://Direction
+            realtimeDirection += incrementVar(input, 0);
+            realtimeDirection = reflow(realtimeDirection, 1, 2);
+            if (realtimeDirection == 1){
+                lcd.clear();
+                lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME);
+            } else {
+                lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
+            }
+            break;
+        case 6: //
+            lcdPrint("Move Right to   ", "start RT move  >");
+            break;
+        case 7:
+            lcdPrint("Starting Move...", "Sel to cancel   ");
+            /* delay(1000); */
+            startRealtime();
+            break;
+    }
+}
+/* }}} */
+/* startRealtime ------------------------------------------------- {{{ */
+
+void startRealtime(){
+    realtime(realtimeDirection, realtimeNumShots);
+    realtimeMenuLocation= 1;
+    lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
+    return;
+}
+
+/* }}} */
+/* realtime -------------------------------------------------- {{{ */
+
+void realtime(byte dir, int shots){
+
+    // Slider Easing
+    QuadraticEase quadEase;
+    quadEase.setDuration(shots);
+    quadEase.setTotalChangeInPosition(trackLen);
+    SineEase sineEase;
+    sineEase.setDuration(shots);
+    sineEase.setTotalChangeInPosition(trackLen);
+    CubicEase cubicEase;
+    cubicEase.setDuration(shots);
+    cubicEase.setTotalChangeInPosition(trackLen);
+
+    long baseStepInterval = trackLen / shots;
+    unsigned long stepStart = 0;
+    unsigned long stepLen = 0;
+    byte counter = 0;
+
+    //LCD Print Execute
+
+    // Pre Delay
+    delay(realtimeCurrentDelay * 1000);
+
+    for (int i = 1; i <= shots; i++){
+        stepInterval = baseStepInterval;
+        stepStart = millis();
+        takePicture();
+        delay(maxShutter);
+
+        /* Slider Easing ----------------------------------------- {{{ */
+        switch(realtimeEasingFunction){
+            case QUADRATIC:
+                switch(realtimeEasingCurve){
+                    case EASEIN:
+                        stepInterval = long(quadEase.easeIn(i) - quadEase.easeIn(i - 1));
+                        break;
+                    case EASEOUT:
+                        stepInterval = long(quadEase.easeOut(i) - quadEase.easeOut(i - 1));
+                        break;
+                    case EASEINOUT:
+                        stepInterval = long(quadEase.easeInOut(i) - quadEase.easeInOut(i - 1));
+                        break;
+                }
+                break;
+            case SINE:
+                switch(realtimeEasingCurve){
+                    case EASEIN:
+                        stepInterval = long(sineEase.easeIn(i) - sineEase.easeIn(i - 1));
+                        break;
+                    case EASEOUT:
+                        stepInterval = long(sineEase.easeOut(i) - sineEase.easeOut(i - 1));
+                        break;
+                    case EASEINOUT:
+                        stepInterval = long(sineEase.easeInOut(i) - sineEase.easeInOut(i - 1));
+                        break;
+                }
+                break;
+            case CUBIC:
+                switch(realtimeEasingCurve){
+                    case EASEIN:
+                        stepInterval = long(cubicEase.easeIn(i) - cubicEase.easeIn(i - 1));
+                        break;
+                    case EASEOUT:
+                        stepInterval = long(cubicEase.easeOut(i) - cubicEase.easeOut(i - 1));
+                        break;
+                    case EASEINOUT:
+                        stepInterval = long(cubicEase.easeInOut(i) - cubicEase.easeInOut(i - 1));
+                        break;
+                }
+                break;
+        }
+        /* }}} */
+        if (dir > 1){
+            stepInterval *= -1;
+        }
+
+        // Account for random direction changes
+        if(EEPROM_DIRECTION == 2){
+            stepInterval *= -1;
+        }
+
+        rotate(stepInterval, 15);
+        if(select()){
+            counter += 1;
+            if(counter > 25){
+                break;
+            }
+        } else {
+            counter = 0;
+        }
+        stepLen = millis() - stepStart;
+    }
+    lcd.setBacklight(HIGH);
+    sleepOff();
+    return;
+}
+
 /* }}} */
 
 /* }}} */
