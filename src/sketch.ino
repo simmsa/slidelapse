@@ -60,6 +60,8 @@ const byte EASEINOUT = 3;
 /* }}} */
 /* Menu Strings {{{ */
 
+char holdSelToExit[17] = "Hold Sel to Exit";
+
 /* Main Menu Strings {{{ */
 
 char selectModeString[17] = "Select Mode:    ";
@@ -72,7 +74,7 @@ char debugStringSelected[17] = "5.Debug        >";
 /* }}} */
 /* Timelapse Menu Strings {{{ */
 char enteringTimelapseModeLineOne[17] = ">>> Timelapse   ";
-char enteringTimelapseModeLineTwo[17] = "Hold Sel to exit";
+/* char enteringTimelapseModeLineTwo[17] = "Hold Sel to exit"; */
 
 char timelapseModeTrackLenLineOne[17] = "Find Track Len..";
 char timelapseModeTrackLenLineTwo[17] = "";
@@ -114,19 +116,20 @@ char timelapseModeDirectionLineOne[17] = "Movement Dir:   ";
 char timelapseModeDirectionLineTwoME[17] = "Motor -----> End";
 char timelapseModeDirectionLineTwoEM[17] = "End -----> Motor";
 
-char timelapseModeStartingTimelapseLineOne[17] = "Start Timelapse ";
-char timelapseModeStartingTimelapseLineTwo[17] = "Hold Sel to exit";
+/* char timelapseModeStartingTimelapseLineOne[17] = "Start Timelapse "; */
+/* char timelapseModeStartingTimelapseLineTwo[17] = "Hold Sel to exit"; */
 
 char timelapseModeRunningTimelapseLineOne[17] = "Timelapse active";
 char timelapseModeRunningTimelapseLineTwo[17] = "";
 
 char timelapseModeCompletedLineOne[17] = "Timelapse Done  ";
-char timelapseModeCompletedLineTwo[17] = "Hold Sel to exit";
+/* char timelapseModeCompletedLineTwo[17] = "Hold Sel to exit"; */
+
 /* }}} */
 /* Commander Menu Strings {{{ */
 
 char enteringCommandModeLineOne[17] = ">>> Commander   ";
-char enteringCommandModeLineTwo[17] = "Hold Sel to exit";
+/* char enteringCommandModeLineTwo[17] = "Hold Sel to exit"; */
 
 char commandModeLineOne[17] = "  Command Mode  ";
 char commandModeLineTwoMotorToEnd[17] = "Motor <----> End";
@@ -137,7 +140,7 @@ char commandModeLineTwoChangingDirection[17] = "Reversing Dir <>";
 /* Direction Menu Strings ---------------------------------------- {{{ */
 
 char enteringDirectionModeLineOne[17] = ">>> Direction   ";
-char enteringDirectionModeLineTwo[17] = "Hold Sel to exit";
+/* char enteringDirectionModeLineTwo[17] = "Hold Sel to exit"; */
 
 char directionModeLineOne[17] = "Set EEPROM Dir: ";
 char directionModeLineTwo[17] = "";
@@ -146,7 +149,7 @@ char directionModeLineTwo[17] = "";
 /* Status Menu Strings {{{ */
 
 char enteringDebugModeLineOne[17] = ">>> Debug Mode  ";
-char enteringDebugModeLineTwo[17] = "Hold Sel to exit";
+/* char enteringDebugModeLineTwo[17] = "Hold Sel to exit"; */
 char debugLineOne[17] = "";
 char debugLineTwo[17] = "";
 char switchOpen[2] = "O";
@@ -163,7 +166,7 @@ char genericErrorLineTwo[17] = "Returning Home  ";
 /* Realtime Menu Strings ---------------------------------------- {{{ */
 
 char enteringRealtimeModeLineOne[17] = ">>>Realtime Mode";
-char enteringRealtimeModeLineTwo[17] = "Hold Sel to exit";
+/* char enteringRealtimeModeLineTwo[17] = "Hold Sel to exit"; */
 
 char realtimeModeSpeedLineOne[17] = "Movement Speed: ";
 char realtimeModeSpeedLineTwo[17] = "";
@@ -177,7 +180,7 @@ char realtimeModeEasingCurveLineOne[17] = "RT Ease Curve:  ";
 char realtimeModeEasingCurveLineTwo[17] = "";
 
 char realtimeModeCompletedLineOne[17] = "Move Complete!  ";
-char realtimeModeCompletedLineTwo[17] = "Hold Sel to exit";
+/* char realtimeModeCompletedLineTwo[17] = "Hold Sel to exit"; */
 
 /* }}} */
 
@@ -689,7 +692,7 @@ const char* yesOrNo(byte input){
 void startTimelapse(){
     timelapse(timelapseDirection, numShots, currentTime);
     timelapseMenuLocation = 1;
-    lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
+    lcdPrint(timelapseModeCompletedLineOne, holdSelToExit);
     return;
 }
 
@@ -973,9 +976,9 @@ void configureRealtime(){
 void incrementRealtimeMenu(int input, int currentMenu, int counter){
     switch(currentMenu){
         case 1: //Speed
-            realtimeSpeed = incrementVar(input, counter);
+            realtimeSpeed += incrementVar(input, counter);
             realtimeSpeed = reflow(realtimeSpeed, realtimeMinSpeed, realtimeMaxSpeed);
-            sprintf(realtimeModeSpeedLineTwo, "%d              ", realtimeSpeed);
+            sprintf(realtimeModeSpeedLineTwo, "%d             ", realtimeSpeed);
             lcdPrint(realtimeModeSpeedLineOne, realtimeModeSpeedLineTwo);
             break;
         case 2: // Start Delay {{{
@@ -991,7 +994,7 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             } else {
                 sprintf(realtimeModeDelayLineTwo, "%d minutes   ", realtimeCurrentDelay / 60);
             }
-            lcdPrint(timelapseModeDelayLineOne, timelapseModeDelayLineTwo);
+            lcdPrint(timelapseModeDelayLineOne, realtimeModeDelayLineTwo);
             break; // }}}
         case 3: //Easing Function
             realtimeEasingFunction -= incrementVar(input, 0);
@@ -1031,7 +1034,7 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
 void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
     realtimeMenuLocation= 1;
-    lcdPrint(realtimeModeCompletedLineOne, realtimeModeCompletedLineTwo);
+    lcdPrint(realtimeModeCompletedLineOne, holdSelToExit);
     return;
 }
 
@@ -1064,9 +1067,9 @@ void realtime(byte dir, int shots){
 
     for (int i = 1; i <= shots; i++){
         stepInterval = baseStepInterval;
-        stepStart = millis();
-        takePicture();
-        delay(maxShutter);
+        /* stepStart = millis(); */
+        /* takePicture(); */
+        /* delay(maxShutter); */
 
         /* Slider Easing ----------------------------------------- {{{ */
         switch(realtimeEasingFunction){
@@ -1120,7 +1123,7 @@ void realtime(byte dir, int shots){
             stepInterval *= -1;
         }
 
-        rotate(stepInterval, 15);
+        rotate(stepInterval, realtimeSpeed);
         if(select()){
             counter += 1;
             if(counter > 25){
@@ -1129,7 +1132,7 @@ void realtime(byte dir, int shots){
         } else {
             counter = 0;
         }
-        stepLen = millis() - stepStart;
+        /* stepLen = millis() - stepStart; */
     }
     lcd.setBacklight(HIGH);
     sleepOff();
@@ -1380,27 +1383,27 @@ void secondaryMenuShow(int input){
     int flashDelay = 2500;
     switch(input){
         case 1: // Timelapse
-            lcdPrint(enteringTimelapseModeLineOne, enteringTimelapseModeLineTwo);
+            lcdPrint(enteringTimelapseModeLineOne, holdSelToExit);
             delay(flashDelay);
             configureTimelapse();
             break;
         case 2: // Realtime
-            lcdPrint(enteringRealtimeModeLineOne, enteringRealtimeModeLineTwo);
+            lcdPrint(enteringRealtimeModeLineOne, holdSelToExit);
             delay(flashDelay);
             configureRealtime();
             break;
         case 3: // Command
-            lcdPrint(enteringCommandModeLineOne, enteringCommandModeLineTwo);
+            lcdPrint(enteringCommandModeLineOne, holdSelToExit);
             delay(flashDelay);
             commanderMode();
             break;
         case 4: // Direction
-            lcdPrint(enteringDirectionModeLineOne, enteringDirectionModeLineTwo);
+            lcdPrint(enteringDirectionModeLineOne, holdSelToExit);
             delay(flashDelay);
             directionChanger();
             break;
         case 5: // Debug
-            lcdPrint(enteringDebugModeLineOne, enteringDebugModeLineTwo);
+            lcdPrint(enteringDebugModeLineOne, holdSelToExit);
             delay(flashDelay);
             status();
             break;
