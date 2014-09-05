@@ -64,9 +64,10 @@ const byte EASEINOUT = 3;
 
 char selectModeString[17] = "Select Mode:    ";
 char timelapseStringSelected[17] = "1.Timelapse    >";
-char commandStringSelected[17] = "2.Commander    >";
-char directionStringSelected[17] = "3. Direction   >";
-char debugStringSelected[17] = "4.Debug        >";
+char realtimeStringSelected[17] = "2.Realtime     >";
+char commandStringSelected[17] = "3.Commander    >";
+char directionStringSelected[17] = "4.Direction    >";
+char debugStringSelected[17] = "5.Debug        >";
 
 /* }}} */
 /* Timelapse Menu Strings {{{ */
@@ -161,6 +162,9 @@ char genericErrorLineTwo[17] = "Returning Home  ";
 /* }}} */
 /* Realtime Menu Strings ---------------------------------------- {{{ */
 
+char enteringRealtimeModeLineOne[17] = ">>>Realtime Mode";
+char enteringRealtimeModeLineTwo[17] = "Hold Sel to exit";
+
 char realtimeModeSpeedLineOne[17] = "Movement Speed: ";
 char realtimeModeSpeedLineTwo[17] = "";
 
@@ -171,6 +175,9 @@ char realtimeModeEasingFunctionLineTwo[17] = "";
 
 char realtimeModeEasingCurveLineOne[17] = "RT Ease Curve:  ";
 char realtimeModeEasingCurveLineTwo[17] = "";
+
+char realtimeModeCompletedLineOne[17] = "Move Complete!  ";
+char realtimeModeCompletedLineTwo[17] = "Hold Sel to exit";
 
 /* }}} */
 
@@ -869,16 +876,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 }
 
 /* }}} */
-/* startTimelapse -------------------------------------------------- {{{ */
-
-void startTimelapse(){
-    timelapse(timelapseDirection, numShots, currentTime);
-    timelapseMenuLocation = 1;
-    lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
-    return;
-}
-
-/* }}} */
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
 void showTimelapseProgress(unsigned long currentShot, int totalShots){
@@ -930,7 +927,7 @@ void quadraticEase(int dir, int steps, float speed, unsigned long time){
 byte realtimeMenuLocation = 1;
 byte realtimeMenuMax = 7;
 byte realtimeMenuMin = 1;
-unsigned int trackLen = 34800;
+/* unsigned int trackLen = 34800; */
 int realtimeNumShots = 500;
 unsigned long realtimeMinDelay = 1; // Seconds
 unsigned long realtimeMaxDelay = 3600; // Seconds
@@ -947,10 +944,10 @@ byte realtimeEasingCurveMax = 3;
 byte realtimeDirection = 1;
 
 /* }}} */
-/* configureTimelapse {{{ */
-void configureTimelapse(){
+/* configureRealtime {{{ */
+void configureRealtime(){
     //Print current menu
-    incrementTimelapseMenu(0, timelapseMenuLocation, 0);
+    incrementTimelapseMenu(0, realtimeMenuLocation, 0);
     int counter = 0;
     while(selectTrigger(1000)){
         int buttonDelay = 150;
@@ -958,20 +955,20 @@ void configureTimelapse(){
             delay(buttonDelay);
             counter += 1;
             if (xLow()){
-                timelapseMenuLocation = reflow(timelapseMenuLocation - 1, timelapseMenuMin, timelapseMenuMax);
+                realtimeMenuLocation = reflow(realtimeMenuLocation - 1, realtimeMenuMin, realtimeMenuMax);
 
-                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(0, realtimeMenuLocation, counter);
             } else if (xHigh()){
-                timelapseMenuLocation = reflow(timelapseMenuLocation + 1, timelapseMenuMin, timelapseMenuMax);
-                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+                realtimeMenuLocation = reflow(realtimeMenuLocation + 1, realtimeMenuMin, realtimeMenuMax);
+                incrementTimelapseMenu(0, realtimeMenuLocation, counter);
             }
         } else if (yHigh() || yLow()){
             delay(buttonDelay);
             counter += 1;
             if (yLow()){
-                incrementTimelapseMenu(-1, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(-1, realtimeMenuLocation, counter);
             } else if (yHigh()){
-                incrementTimelapseMenu(1, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(1, realtimeMenuLocation, counter);
             }
         } else {
             counter = 0;
@@ -979,8 +976,8 @@ void configureTimelapse(){
     }
 }
 /* }}} */
-/* incrementTimelapseMenu {{{ */
-void incrementTimelapseMenu(int input, int currentMenu, int counter){
+/* incrementRealtimeMenu {{{ */
+void incrementRealtimeMenu(int input, int currentMenu, int counter){
     switch(currentMenu){
         case 1: //Speed
             realtimeSpeed = incrementVar(input, counter);
@@ -1041,7 +1038,7 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
 void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
     realtimeMenuLocation= 1;
-    lcdPrint(timelapseModeCompletedLineOne, timelapseModeCompletedLineTwo);
+    lcdPrint(realtimeModeCompletedLineOne, realtimeModeCompletedLineTwo);
     return;
 }
 
@@ -1061,6 +1058,7 @@ void realtime(byte dir, int shots){
     cubicEase.setDuration(shots);
     cubicEase.setTotalChangeInPosition(trackLen);
 
+    long stepInterval = 1;
     long baseStepInterval = trackLen / shots;
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
@@ -1333,12 +1331,15 @@ char* menuOptions(int input){
             return timelapseStringSelected;
             break;
         case 2:
-            return commandStringSelected;
+            return realtimeStringSelected;
             break;
         case 3:
-            return directionStringSelected;
+            return commandStringSelected;
             break;
         case 4:
+            return directionStringSelected;
+            break;
+        case 5:
             return debugStringSelected;
             break;
         default:
@@ -1350,7 +1351,7 @@ char* menuOptions(int input){
 /* menuShow {{{ */
 int currentMenuPosition = 1;
 int minMenuPosition = 1;
-int maxMenuPosition = 4;
+int maxMenuPosition = 5;
 
 void menuShow(){
     while (directionTrigger(50, RIGHT) == true){
@@ -1390,17 +1391,22 @@ void secondaryMenuShow(int input){
             delay(flashDelay);
             configureTimelapse();
             break;
-        case 2: // Command
+        case 2: // Realtime
+            lcdPrint(enteringRealtimeModeLineOne, enteringRealtimeModeLineTwo);
+            delay(flashDelay);
+            configureRealtime();
+            break;
+        case 3: // Command
             lcdPrint(enteringCommandModeLineOne, enteringCommandModeLineTwo);
             delay(flashDelay);
             commanderMode();
             break;
-        case 3: // Direction
+        case 4: // Direction
             lcdPrint(enteringDirectionModeLineOne, enteringDirectionModeLineTwo);
             delay(flashDelay);
             directionChanger();
             break;
-        case 4: // Debug
+        case 5: // Debug
             lcdPrint(enteringDebugModeLineOne, enteringDebugModeLineTwo);
             delay(flashDelay);
             status();
