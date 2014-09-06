@@ -56,6 +56,8 @@ const byte CUBIC = 4;
 const byte EASEIN = 1;
 const byte EASEOUT = 2;
 const byte EASEINOUT = 3;
+const byte REVEASEIN = 4;
+const byte REVEASEOUT = 5;
 
 /* }}} */
 /* Menu Strings {{{ */
@@ -674,6 +676,12 @@ const char* easingCurveName(byte input){
         case 3:
             return "3. EaseInOut";
             break;
+        case 4:
+            return "4. RevEaseIn";
+            break;
+        case 5:
+            return "5.RevEaseOut";
+            break;
     }
 }
 /* }}} */
@@ -941,7 +949,7 @@ byte realtimeEasingFunctionMin = 1;
 byte realtimeEasingFunctionMax = 4;
 byte realtimeEasingCurve = EASEIN;
 byte realtimeEasingCurveMin = 1;
-byte realtimeEasingCurveMax = 3;
+byte realtimeEasingCurveMax = 5;
 byte realtimeDirection = 1;
 
 /* }}} */
@@ -1076,6 +1084,7 @@ void realtime(byte dir, int shots){
 
     for (int i = 1; i <= shots; i++){
         stepInterval = baseStepInterval;
+        int revI = (shots + 1) - i;
 
         /* Slider Easing ----------------------------------------- {{{ */
         switch(realtimeEasingFunction){
@@ -1093,6 +1102,12 @@ void realtime(byte dir, int shots){
                     case EASEINOUT:
                         instanceSpeed = realtimeQuadEase.easeInOut(i);
                         break;
+                    case REVEASEIN:
+                        instanceSpeed = realtimeQuadEase.easeIn(revI);
+                        break;
+                    case REVEASEOUT:
+                        instanceSpeed = realtimeQuadEase.easeOut(revI);
+                        break;
                 }
                 break;
             case SINE:
@@ -1106,6 +1121,12 @@ void realtime(byte dir, int shots){
                     case EASEINOUT:
                         instanceSpeed = sineEase.easeInOut(i);
                         break;
+                    case REVEASEIN:
+                        instanceSpeed = sineEase.easeIn(revI);
+                        break;
+                    case REVEASEOUT:
+                        instanceSpeed = sineEase.easeOut(revI);
+                        break;
                 }
                 break;
             case CUBIC:
@@ -1118,6 +1139,12 @@ void realtime(byte dir, int shots){
                         break;
                     case EASEINOUT:
                         instanceSpeed = cubicEase.easeInOut(i);
+                        break;
+                    case REVEASEIN:
+                        instanceSpeed = cubicEase.easeIn(revI);
+                        break;
+                    case REVEASEOUT:
+                        instanceSpeed = cubicEase.easeOut(revI);
                         break;
                 }
                 break;
