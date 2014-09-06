@@ -864,6 +864,12 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                     case EASEINOUT:
                         shotDelay = quadTimeEase.easeInOut(i) - quadTimeEase.easeInOut(i - 1);
                         break;
+                    case REVEASEIN:
+                        stepInterval = long(quadTimeEase.easeIn(revI) - quadEase.easeIn(revI - 1));
+                        break;
+                    case REVEASEOUT:
+                        stepInterval = long(quadTimeEase.easeOut(revI) - quadEase.easeOut(revI - 1));
+                        break;
                 }
                 break;
             case SINE:
@@ -877,6 +883,12 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                     case EASEINOUT:
                         shotDelay = sineTimeEase.easeInOut(i) - sineTimeEase.easeInOut(i - 1);
                         break;
+                    case REVEASEIN:
+                        stepInterval = long(sineTimeEase.easeIn(revI) - sineTimeEase.easeIn(revI - 1));
+                        break;
+                    case REVEASEOUT:
+                        stepInterval = long(sineTimeEase.easeOut(revI) - sineTimeEase.easeOut(revI - 1));
+                        break;
                 }
                 break;
             case CUBIC:
@@ -889,6 +901,12 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                         break;
                     case EASEINOUT:
                         shotDelay = cubicTimeEase.easeInOut(i) - cubicTimeEase.easeInOut(i - 1);
+                        break;
+                    case REVEASEIN:
+                        stepInterval = long(cubicTimeEase.easeIn(revI) - cubicTimeEase.easeIn(revI - 1));
+                        break;
+                    case REVEASEOUT:
+                        stepInterval = long(cubicTimeEase.easeOut(revI) - cubicTimeEase.easeOut(revI - 1));
                         break;
                 }
                 break;
