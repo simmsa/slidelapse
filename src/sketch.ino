@@ -146,7 +146,7 @@ char enteringDirectionModeLineOne[17] = ">>> Direction   ";
 /* char enteringDirectionModeLineTwo[17] = "Hold Sel to exit"; */
 
 char directionModeLineOne[17] = "Set EEPROM Dir: ";
-char directionModeLineTwo[17] = "";
+/* char directionModeLineTwo[17] = ""; */
 
 /* }}} */
 /* Status Menu Strings {{{ */
@@ -172,21 +172,21 @@ char enteringRealtimeModeLineOne[17] = ">>>Realtime Mode";
 /* char enteringRealtimeModeLineTwo[17] = "Hold Sel to exit"; */
 
 char realtimeModeSpeedLineOne[17] = "Movement Speed: ";
-char realtimeModeSpeedLineTwo[17] = "";
+/* char realtimeModeSpeedLineTwo[17] = ""; */
 
-char realtimeModeDelayLineTwo[17] = "";
+/* char realtimeModeDelayLineTwo[17] = ""; */
 
 char realtimeModeEasingFunctionLineOne[17] = "RT Ease Func:   ";
-char realtimeModeEasingFunctionLineTwo[17] = "";
+/* char realtimeModeEasingFunctionLineTwo[17] = ""; */
 
 char realtimeModeEasingCurveLineOne[17] = "RT Ease Curve:  ";
-char realtimeModeEasingCurveLineTwo[17] = "";
+/* char realtimeModeEasingCurveLineTwo[17] = ""; */
 
 char realtimeModeCompletedLineOne[17] = "Move Complete!  ";
 /* char realtimeModeCompletedLineTwo[17] = "Hold Sel to exit"; */
 
-char realtimeModeProgressLineOne[17] = "Current Speed:  ";
-char realtimeModeProgressLineTwo[17] = "";
+/* char realtimeModeProgressLineOne[17] = "Current Speed:  "; */
+/* char realtimeModeProgressLineTwo[17] = ""; */
 
 /* }}} */
 
@@ -846,6 +846,8 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
             counter = 0;
         }
         stepLen = millis() - stepStart;
+
+        /* time easing ------------------------------------------ {{{ */
         switch(timingEasingFunction){
             case LINEAR:
                 /* delay((shotDelay * 1000) - stepLen); */
@@ -891,6 +893,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                 }
                 break;
         }
+        /* }}} */
         if (stepLen < (shotDelay)){
             delay((shotDelay) - stepLen);
         }
@@ -1011,8 +1014,8 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
         case 1: //Speed
             realtimeCurrentMaxSpeed += incrementVar(input, counter);
             realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeMinSpeed, realtimeMaxSpeed);
-            sprintf(realtimeModeSpeedLineTwo, "%02d              ", realtimeCurrentMaxSpeed);
-            lcdPrint(realtimeModeSpeedLineOne, realtimeModeSpeedLineTwo);
+            sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
+            lcdPrint(realtimeModeSpeedLineOne, utilityString);
             break;
         case 2: // Start Delay {{{
             if (realtimeCurrentDelay < 60){
@@ -1023,23 +1026,23 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             realtimeCurrentDelay = reflow(realtimeCurrentDelay, realtimeMinDelay, realtimeMaxDelay);
 
             if (realtimeCurrentDelay < 60){
-                sprintf(realtimeModeDelayLineTwo, "%d seconds   ", realtimeCurrentDelay);
+                sprintf(utilityString, "%d seconds   ", realtimeCurrentDelay);
             } else {
-                sprintf(realtimeModeDelayLineTwo, "%d minutes   ", realtimeCurrentDelay / 60);
+                sprintf(utilityString, "%d minutes   ", realtimeCurrentDelay / 60);
             }
-            lcdPrint(timelapseModeDelayLineOne, realtimeModeDelayLineTwo);
+            lcdPrint(timelapseModeDelayLineOne, utilityString);
             break; // }}}
         case 3: //Easing Function
             realtimeEasingFunction -= incrementVar(input, 0);
             realtimeEasingFunction = reflow(realtimeEasingFunction, realtimeEasingFunctionMin, realtimeEasingFunctionMax);
-            sprintf(realtimeModeEasingFunctionLineTwo, "%s       ", easingFunctionName(realtimeEasingFunction));
-            lcdPrint(realtimeModeEasingFunctionLineOne, realtimeModeEasingFunctionLineTwo);
+            sprintf(utilityString, "%s       ", easingFunctionName(realtimeEasingFunction));
+            lcdPrint(realtimeModeEasingFunctionLineOne, utilityString);
             break;
         case 4: //Easing Curve
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
-            sprintf(realtimeModeEasingCurveLineTwo, "%s    ", easingCurveName(realtimeEasingCurve));
-            lcdPrint(realtimeModeEasingCurveLineOne, realtimeModeEasingCurveLineTwo);
+            sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
+            lcdPrint(realtimeModeEasingCurveLineOne, utilityString);
             break;
         case 5://Direction
             realtimeDirection += incrementVar(input, 0);
@@ -1212,8 +1215,8 @@ void takePicture(){
 void directionChanger(){
     byte instanceEEDir = EEPROM_DIRECTION;
     // Print Current Status
-    sprintf(directionModeLineTwo, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-    lcdPrint(directionModeLineOne, directionModeLineTwo);
+    sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
+    lcdPrint(directionModeLineOne, utilityString);
 
     while(selectTrigger(1000)){
         if (yHigh() || yLow()){
@@ -1226,8 +1229,8 @@ void directionChanger(){
                 instanceEEDir -= 1;
                 instanceEEDir = reflow(instanceEEDir, 1, 2);
             }
-            sprintf(directionModeLineTwo, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-            lcdPrint(directionModeLineOne, directionModeLineTwo);
+            sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
+            lcdPrint(directionModeLineOne, utilityString);
         }
     }
     if (instanceEEDir != EEPROM_DIRECTION){
