@@ -61,6 +61,7 @@ const byte EASEINOUT = 3;
 /* Menu Strings {{{ */
 
 char holdSelToExit[17] = "Hold Sel to Exit";
+char utilityString[17] = "";
 
 /* Main Menu Strings {{{ */
 
@@ -76,41 +77,41 @@ char debugStringSelected[17] = "5.Debug        >";
 char enteringTimelapseModeLineOne[17] = ">>> Timelapse   ";
 /* char enteringTimelapseModeLineTwo[17] = "Hold Sel to exit"; */
 
-char timelapseModeTrackLenLineOne[17] = "Find Track Len..";
-char timelapseModeTrackLenLineTwo[17] = "";
+/* char timelapseModeTrackLenLineOne[17] = "Find Track Len.."; */
+/* char timelapseModeTrackLenLineTwo[17] = ""; */
 
 char timelapseModeNumShotsLineOne[17] = "Number of Shots:";
-char timelapseModeNumShotsLineTwo[17] = "";
+/* char timelapseModeNumShotsLineTwo[17] = ""; */
 
 char timelapseModeDurationLineOne[17] = "TL Duration:    ";
-char timelapseModeDurationLineTwo[17] = "";
+/* char timelapseModeDurationLineTwo[17] = ""; */
 
 char timelapseModeIntervalLineOne[17] = "Avg Interval:   ";
-char timelapseModeIntervalLineTwo[17] = "";
+/* char timelapseModeIntervalLineTwo[17] = ""; */
 
 char timelapseModeDelayLineOne[17] = "Start Delay:    ";
-char timelapseModeDelayLineTwo[17] = "";
+/* char timelapseModeDelayLineTwo[17] = ""; */
 
 char timelapseModeLongestShutterLineOne[17] = "Longest Shutter:";
-char timelapseModeLongestShutterLineTwo[17] = "";
+/* char timelapseModeLongestShutterLineTwo[17] = ""; */
 
 char timelapseModeSleepBetweenShotsLineOne[17] = "Sleep btw shots ";
-char timelapseModeSleepBetweenShotsLineTwo[17] = "";
+/* char timelapseModeSleepBetweenShotsLineTwo[17] = ""; */
 
 char timelapseModeLCDLineOne[17] = "Backlight on?:  ";
-char timelapseModeLCDLineTwo[17] = "";
+/* char timelapseModeLCDLineTwo[17] = ""; */
 
 char timelapseModeEasingFunctionLineOne[17] = "Slide Ease Func:";
-char timelapseModeEasingFunctionLineTwo[17] = "";
+/* char timelapseModeEasingFunctionLineTwo[17] = ""; */
 
 char timelapseModeEasingCurveLineOne[17] = "Slide Ease Curv:";
-char timelapseModeEasingCurveLineTwo[17] = "";
+/* char timelapseModeEasingCurveLineTwo[17] = ""; */
 
 char timelapseModeTimeEasingFunctionLineOne[17] = "Time Ease Func: ";
-char timelapseModeTimeEasingFunctionLineTwo[17] = "";
+/* char timelapseModeTimeEasingFunctionLineTwo[17] = ""; */
 
 char timelapseModeTimeEasingCurveLineOne[17] = "Time Curve Func:";
-char timelapseModeTimeEasingCurveLineTwo[17] = "";
+/* char timelapseModeTimeEasingCurveLineTwo[17] = ""; */
 
 char timelapseModeDirectionLineOne[17] = "Movement Dir:   ";
 char timelapseModeDirectionLineTwoME[17] = "Motor -----> End";
@@ -120,7 +121,7 @@ char timelapseModeDirectionLineTwoEM[17] = "End -----> Motor";
 /* char timelapseModeStartingTimelapseLineTwo[17] = "Hold Sel to exit"; */
 
 char timelapseModeRunningTimelapseLineOne[17] = "Timelapse active";
-char timelapseModeRunningTimelapseLineTwo[17] = "";
+/* char timelapseModeRunningTimelapseLineTwo[17] = ""; */
 
 char timelapseModeCompletedLineOne[17] = "Timelapse Done  ";
 /* char timelapseModeCompletedLineTwo[17] = "Hold Sel to exit"; */
@@ -181,6 +182,9 @@ char realtimeModeEasingCurveLineTwo[17] = "";
 
 char realtimeModeCompletedLineOne[17] = "Move Complete!  ";
 /* char realtimeModeCompletedLineTwo[17] = "Hold Sel to exit"; */
+
+char realtimeModeProgressLineOne[17] = "Current Speed:  ";
+char realtimeModeProgressLineTwo[17] = "";
 
 /* }}} */
 
@@ -311,7 +315,7 @@ void findTrackLen(){
     unsigned long maxTrackLen = 0;
     unsigned long currentTrackLen = 0;
     int direction = 1;
-    lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo);
+    /* lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo); */
     while(selectTrigger(2000)){
         if(digitalRead(MOTOR_SWITCH_PIN) != HIGH && digitalRead(END_SWITCH_PIN) != HIGH){
             rotate(direction, 25);
@@ -323,14 +327,14 @@ void findTrackLen(){
             direction = 1;
             rotate(direction, 25);
             currentTrackLen = 0;
-            sprintf(timelapseModeTrackLenLineTwo, "Max Len:%05ld   ", maxTrackLen);
-            lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo);
+            /* sprintf(timelapseModeTrackLenLineTwo, "Max Len:%05ld   ", maxTrackLen); */
+            /* lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo); */
         } else if (digitalRead(END_SWITCH_PIN) == HIGH){
             direction = -1;
             rotate(direction, 25);
             currentTrackLen = 0;
-            sprintf(timelapseModeTrackLenLineTwo, "Max Len:%05ld   ", maxTrackLen);
-            lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo);
+            /* sprintf(timelapseModeTrackLenLineTwo, "Max Len:%05ld   ", maxTrackLen); */
+            /* lcdPrint(timelapseModeTrackLenLineOne, timelapseModeTrackLenLineTwo); */
         }
     }
 }
@@ -529,24 +533,24 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
         case 1: //Num of Shots
             numShots += incrementVar(input, counter);
             numShots = reflow(numShots, minShots, maxShots);
-            sprintf(timelapseModeNumShotsLineTwo, "%04d            ", numShots);
-            lcdPrint(timelapseModeNumShotsLineOne, timelapseModeNumShotsLineTwo);
+            sprintf(utilityString, "%04d            ", numShots);
+            lcdPrint(timelapseModeNumShotsLineOne, utilityString);
             break;
         case 2: //Duration
             currentTime += incrementVar(input, counter) * 60;
             currentTime = reflow(currentTime, minTime, maxTime);
-            sprintf(timelapseModeDurationLineTwo, "%04d minutes   ", currentTime / 60);
-            lcdPrint(timelapseModeDurationLineOne, timelapseModeDurationLineTwo);
+            sprintf(utilityString, "%04d minutes   ", currentTime / 60);
+            lcdPrint(timelapseModeDurationLineOne, utilityString);
             break;
         case 3: // Show Interval
-            sprintf(timelapseModeIntervalLineTwo, "%04d seconds    ", currentTime / numShots);
-            lcdPrint(timelapseModeIntervalLineOne, timelapseModeIntervalLineTwo);
+            sprintf(utilityString, "%04d seconds    ", currentTime / numShots);
+            lcdPrint(timelapseModeIntervalLineOne, utilityString);
             break;
         case 4: //Longest Shutter
             maxShutter += incrementVar(input, counter) * 1000;
             maxShutter = reflow(maxShutter, minMaxShutter, maxMaxShutter);
-            sprintf(timelapseModeLongestShutterLineTwo, "%02u seconds   ", maxShutter / 1000);
-            lcdPrint(timelapseModeLongestShutterLineOne, timelapseModeLongestShutterLineTwo);
+            sprintf(utilityString, "%02u seconds   ", maxShutter / 1000);
+            lcdPrint(timelapseModeLongestShutterLineOne, utilityString);
             break;
         case 5: // Start Delay
             if (currentDelay < 60){
@@ -557,47 +561,47 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             currentDelay = reflow(currentDelay, minDelay, maxDelay);
 
             if (currentDelay < 60){
-                sprintf(timelapseModeDelayLineTwo, "%d seconds   ", currentDelay);
+                sprintf(utilityString, "%d seconds   ", currentDelay);
             } else {
-                sprintf(timelapseModeDelayLineTwo, "%d minutes   ", currentDelay / 60);
+                sprintf(utilityString, "%d minutes   ", currentDelay / 60);
             }
-            lcdPrint(timelapseModeDelayLineOne, timelapseModeDelayLineTwo);
+            lcdPrint(timelapseModeDelayLineOne, utilityString);
             break;
         case 6: // Sleep between shots
             sleep += incrementVar(input, 0);
             sleep = reflow(sleep, 1, 2);
-            sprintf(timelapseModeSleepBetweenShotsLineTwo, "%s             ", yesOrNo(sleep));
-            lcdPrint(timelapseModeSleepBetweenShotsLineOne, timelapseModeSleepBetweenShotsLineTwo);
+            sprintf(utilityString, "%s             ", yesOrNo(sleep));
+            lcdPrint(timelapseModeSleepBetweenShotsLineOne, utilityString);
             break;
         case 7: // LCD on / off
             LCDOn += incrementVar(input, 0);
             LCDOn = reflow(LCDOn, 1, 2);
-            sprintf(timelapseModeLCDLineTwo, "%s             ", yesOrNo(LCDOn));
-            lcdPrint(timelapseModeLCDLineOne, timelapseModeLCDLineTwo);
+            sprintf(utilityString, "%s             ", yesOrNo(LCDOn));
+            lcdPrint(timelapseModeLCDLineOne, utilityString);
             break;
         case 8: //Easing Function
             easingFunction -= incrementVar(input, 0);
             easingFunction = reflow(easingFunction, easingFunctionMin, easingFunctionMax);
-            sprintf(timelapseModeEasingFunctionLineTwo, "%s       ", easingFunctionName(easingFunction));
-            lcdPrint(timelapseModeEasingFunctionLineOne, timelapseModeEasingFunctionLineTwo);
+            sprintf(utilityString, "%s       ", easingFunctionName(easingFunction));
+            lcdPrint(timelapseModeEasingFunctionLineOne, utilityString);
             break;
         case 9: //Easing Curve
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
-            sprintf(timelapseModeEasingCurveLineTwo, "%s    ", easingCurveName(easingCurve));
-            lcdPrint(timelapseModeEasingCurveLineOne, timelapseModeEasingCurveLineTwo);
+            sprintf(utilityString, "%s    ", easingCurveName(easingCurve));
+            lcdPrint(timelapseModeEasingCurveLineOne, utilityString);
             break;
         case 10: // Time Easing Function
             timingEasingFunction -= incrementVar(input, 0);
             timingEasingFunction = reflow(timingEasingFunction, timingEasingFunctionMin, timingEasingFunctionMax);
-            sprintf(timelapseModeTimeEasingFunctionLineTwo, "%s       ", easingFunctionName(timingEasingFunction));
-            lcdPrint(timelapseModeTimeEasingFunctionLineOne, timelapseModeTimeEasingFunctionLineTwo);
+            sprintf(utilityString, "%s       ", easingFunctionName(timingEasingFunction));
+            lcdPrint(timelapseModeTimeEasingFunctionLineOne, utilityString);
             break;
         case 11: //Time Easing Curve
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
-            sprintf(timelapseModeTimeEasingCurveLineTwo, "%s    ", easingCurveName(timingEasingCurve));
-            lcdPrint(timelapseModeTimeEasingCurveLineOne, timelapseModeTimeEasingCurveLineTwo);
+            sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
+            lcdPrint(timelapseModeTimeEasingCurveLineOne, utilityString);
             break;
         case 12://Direction
             timelapseDirection += incrementVar(input, 0);
@@ -875,8 +879,8 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
 void showTimelapseProgress(unsigned long currentShot, int totalShots){
-    sprintf(timelapseModeRunningTimelapseLineTwo, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
-    lcdPrint(timelapseModeRunningTimelapseLineOne, timelapseModeRunningTimelapseLineTwo);
+    sprintf(utilityString, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
+    lcdPrint(timelapseModeRunningTimelapseLineOne, utilityString);
 }
 
 /* }}} */
@@ -928,8 +932,9 @@ int realtimeNumShots = 500;
 unsigned long realtimeMinDelay = 1; // Seconds
 unsigned long realtimeMaxDelay = 3600; // Seconds
 unsigned long realtimeCurrentDelay = 10;
-byte realtimeSpeed = 25;
-byte realtimeMaxSpeed = 100;
+byte realtimeCurrentMaxSpeed = 25;
+byte realtimeCurrentMinSpeed = 10;
+byte realtimeMaxSpeed = 99;
 byte realtimeMinSpeed = 1;
 byte realtimeEasingFunction = LINEAR;
 byte realtimeEasingFunctionMin = 1;
@@ -976,9 +981,9 @@ void configureRealtime(){
 void incrementRealtimeMenu(int input, int currentMenu, int counter){
     switch(currentMenu){
         case 1: //Speed
-            realtimeSpeed += incrementVar(input, counter);
-            realtimeSpeed = reflow(realtimeSpeed, realtimeMinSpeed, realtimeMaxSpeed);
-            sprintf(realtimeModeSpeedLineTwo, "%d             ", realtimeSpeed);
+            realtimeCurrentMaxSpeed += incrementVar(input, counter);
+            realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeMinSpeed, realtimeMaxSpeed);
+            sprintf(realtimeModeSpeedLineTwo, "%02d              ", realtimeCurrentMaxSpeed);
             lcdPrint(realtimeModeSpeedLineOne, realtimeModeSpeedLineTwo);
             break;
         case 2: // Start Delay {{{
@@ -1033,7 +1038,7 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
 
 void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
-    realtimeMenuLocation= 1;
+    realtimeMenuLocation = 1;
     lcdPrint(realtimeModeCompletedLineOne, holdSelToExit);
     return;
 }
@@ -1043,72 +1048,76 @@ void startRealtime(){
 
 void realtime(byte dir, int shots){
 
+    int realtimeSpeedDiff = realtimeCurrentMaxSpeed - realtimeCurrentMinSpeed;
+
     // Slider Easing
-    QuadraticEase quadEase;
-    quadEase.setDuration(shots);
-    quadEase.setTotalChangeInPosition(trackLen);
+    QuadraticEase realtimeQuadEase;
+    realtimeQuadEase.setDuration(shots);
+    realtimeQuadEase.setTotalChangeInPosition(realtimeSpeedDiff);
     SineEase sineEase;
     sineEase.setDuration(shots);
-    sineEase.setTotalChangeInPosition(trackLen);
+    sineEase.setTotalChangeInPosition(realtimeSpeedDiff);
     CubicEase cubicEase;
     cubicEase.setDuration(shots);
-    cubicEase.setTotalChangeInPosition(trackLen);
+    cubicEase.setTotalChangeInPosition(realtimeSpeedDiff);
 
     long stepInterval = 1;
     long baseStepInterval = trackLen / shots;
-    unsigned long stepStart = 0;
-    unsigned long stepLen = 0;
+    /* unsigned long stepStart = 0; */
+    /* unsigned long stepLen = 0; */
     byte counter = 0;
+    byte instanceSpeed = 1;
+    instanceSpeed = realtimeCurrentMaxSpeed;
 
     //LCD Print Execute
 
     // Pre Delay
-    delay(realtimeCurrentDelay * 1000);
+    /* delay(realtimeCurrentDelay * 1000); */
 
     for (int i = 1; i <= shots; i++){
         stepInterval = baseStepInterval;
-        /* stepStart = millis(); */
-        /* takePicture(); */
-        /* delay(maxShutter); */
 
         /* Slider Easing ----------------------------------------- {{{ */
         switch(realtimeEasingFunction){
+            case LINEAR:
+                instanceSpeed = realtimeCurrentMaxSpeed - realtimeCurrentMinSpeed;
+                break;
             case QUADRATIC:
                 switch(realtimeEasingCurve){
                     case EASEIN:
-                        stepInterval = long(quadEase.easeIn(i) - quadEase.easeIn(i - 1));
+                        instanceSpeed = realtimeQuadEase.easeIn(i);
                         break;
                     case EASEOUT:
-                        stepInterval = long(quadEase.easeOut(i) - quadEase.easeOut(i - 1));
+                        instanceSpeed = realtimeQuadEase.easeOut(i);
                         break;
                     case EASEINOUT:
-                        stepInterval = long(quadEase.easeInOut(i) - quadEase.easeInOut(i - 1));
+                        instanceSpeed = realtimeQuadEase.easeInOut(i);
                         break;
                 }
                 break;
             case SINE:
                 switch(realtimeEasingCurve){
                     case EASEIN:
-                        stepInterval = long(sineEase.easeIn(i) - sineEase.easeIn(i - 1));
+                        instanceSpeed = sineEase.easeIn(i);
                         break;
                     case EASEOUT:
-                        stepInterval = long(sineEase.easeOut(i) - sineEase.easeOut(i - 1));
+                        instanceSpeed = sineEase.easeOut(i);
                         break;
                     case EASEINOUT:
-                        stepInterval = long(sineEase.easeInOut(i) - sineEase.easeInOut(i - 1));
+                        instanceSpeed = sineEase.easeInOut(i);
                         break;
                 }
                 break;
             case CUBIC:
                 switch(realtimeEasingCurve){
                     case EASEIN:
-                        stepInterval = long(cubicEase.easeIn(i) - cubicEase.easeIn(i - 1));
+                        instanceSpeed = cubicEase.easeIn(i);
                         break;
                     case EASEOUT:
-                        stepInterval = long(cubicEase.easeOut(i) - cubicEase.easeOut(i - 1));
+                        instanceSpeed = cubicEase.easeOut(i);
                         break;
                     case EASEINOUT:
-                        stepInterval = long(cubicEase.easeInOut(i) - cubicEase.easeInOut(i - 1));
+                        instanceSpeed = cubicEase.easeInOut(i);
                         break;
                 }
                 break;
@@ -1122,19 +1131,19 @@ void realtime(byte dir, int shots){
         if(EEPROM_DIRECTION == 2){
             stepInterval *= -1;
         }
+        /* sprintf(utilityString, "%2d              ", instanceSpeed + realtimeCurrentMinSpeed); */
+        /* lcdPrint(realtimeModeProgressLineOne, utilityString); */
 
-        rotate(stepInterval, realtimeSpeed);
+        rotate(stepInterval, instanceSpeed + realtimeCurrentMinSpeed);
         if(select()){
             counter += 1;
-            if(counter > 25){
+            if(counter > 4){
                 break;
             }
         } else {
             counter = 0;
         }
-        /* stepLen = millis() - stepStart; */
     }
-    lcd.setBacklight(HIGH);
     sleepOff();
     return;
 }
@@ -1282,18 +1291,18 @@ char* formattedReverseSwitch(byte status){
 void status(){
     while (selectTrigger(1000)){
     /* Reading sensors */
-    int xpos = analogRead(A0);
-    int ypos = analogRead(A1);
-    byte selectStatus = digitalRead(JOYSTICK_SELECT_PIN);
-    byte motorSwitchStatus = digitalRead(MOTOR_SWITCH_PIN);
-    byte endSwitchStatus = digitalRead(END_SWITCH_PIN);
+        int xpos = analogRead(A0);
+        int ypos = analogRead(A1);
+        byte selectStatus = digitalRead(JOYSTICK_SELECT_PIN);
+        byte motorSwitchStatus = digitalRead(MOTOR_SWITCH_PIN);
+        byte endSwitchStatus = digitalRead(END_SWITCH_PIN);
 
-    sprintf(debugLineOne, "X:%4d Sel:%s    ", xpos, formattedReverseSwitch(selectStatus));
-    sprintf(debugLineTwo, "Y:%4d M:%s E:%s  ", ypos, formattedSwitch(motorSwitchStatus), formattedSwitch(endSwitchStatus));
+        sprintf(debugLineOne, "X:%4d Sel:%s    ", xpos, formattedReverseSwitch(selectStatus));
+        sprintf(debugLineTwo, "Y:%4d M:%s E:%s  ", ypos, formattedSwitch(motorSwitchStatus), formattedSwitch(endSwitchStatus));
 
-    lcdPrint(debugLineOne, debugLineTwo);
+        lcdPrint(debugLineOne, debugLineTwo);
     }
-    menuShow();
+    /* menuShow(); */
     return;
 }
 /* }}} end of status */
