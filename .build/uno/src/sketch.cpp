@@ -525,14 +525,14 @@ int maxShots = 9999;
 int minShots = 5;
 unsigned int maxShutter = 1000;
 unsigned int minMaxShutter = 100;
-unsigned int maxMaxShutter = 30000;
+unsigned int maxMaxShutter = 31000;
 unsigned long minDelay = 1; // Seconds
 unsigned long maxDelay = 3600; // Seconds
 unsigned long currentDelay = 10;
 byte sleep = 1;
 byte LCDOn = 1;
 byte speed = 25;
-long currentTime = 600; //10 min
+long currentTime = 1500; //25 min
 long minTime = 60; // 1 min
 long maxTime = 86400; // 24hrs
 byte easingFunction = LINEAR;
@@ -581,6 +581,8 @@ void configureTimelapse(){
             counter = 0;
         }
     }
+    lcd.setBacklight(HIGH);
+    sleepOff();
 }
 /* }}} */
 /* incrementTimelapseMenu {{{ */
@@ -973,8 +975,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     /* if(sleep == 1){ */
     /*     sleepOn(); */
     /* } */
-    lcd.setBacklight(HIGH);
-    sleepOff();
     return;
 }
 
@@ -1574,7 +1574,7 @@ void setup()
     lcd.begin(16, 2);
     lcd.print("   Slidelapse");
     lcd.setCursor(0, 1);
-    lcd.print(" Version 0.5.0");
+    lcd.print(" Version 0.7.0");
     delay(3000);
     lcd.clear();
 

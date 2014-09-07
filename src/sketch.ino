@@ -527,6 +527,8 @@ void configureTimelapse(){
             counter = 0;
         }
     }
+    lcd.setBacklight(HIGH);
+    sleepOff();
 }
 /* }}} */
 /* incrementTimelapseMenu {{{ */
@@ -919,8 +921,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     /* if(sleep == 1){ */
     /*     sleepOn(); */
     /* } */
-    lcd.setBacklight(HIGH);
-    sleepOff();
     return;
 }
 
