@@ -480,7 +480,7 @@ byte LCDOn = 1;
 byte speed = 25;
 long currentTime = 1500; //25 min
 long minTime = 60; // 1 min
-long maxTime = 86400; // 24hrs
+unsigned long maxTime = 86400; // 24hrs
 byte easingFunction = LINEAR;
 byte easingFunctionMin = 1;
 byte easingFunctionMax = 4;
@@ -543,7 +543,7 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
         case 2: //Duration
             currentTime += incrementVar(input, counter) * 60;
             currentTime = reflow(currentTime, minTime, maxTime);
-            sprintf(utilityString, "%04d minutes   ", currentTime / 60);
+            sprintf(utilityString, "%04u minutes   ", currentTime / 60);
             lcdPrint(timelapseModeDurationLineOne, utilityString);
             break;
         case 3: // Show Interval
@@ -714,7 +714,7 @@ void startTimelapse(){
 /* timelapse -------------------------------------------------- {{{ */
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
-    int shotDelay = instanceTime * 1000 / shots;
+    unsigned long shotDelay = instanceTime * 1000 / shots;
 
     // Slider Easing
     QuadraticEase quadEase;
@@ -737,7 +737,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     CubicEase cubicTimeEase;
     cubicTimeEase.setDuration(shots);
     cubicTimeEase.setTotalChangeInPosition(instanceTime * 1000);
-    unsigned long timeEaseDelay = 0;
+    unsigned double timeEaseDelay = 0;
 
     long baseStepInterval = trackLen / shots;
     unsigned long stepStart = 0;
