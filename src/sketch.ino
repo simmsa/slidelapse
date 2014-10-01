@@ -244,7 +244,7 @@ byte readJoystick(int buttonDelay){
 
 /* rotate {{{ */
 void rotate(int steps, byte speed){
-    int dir = (steps > 0)? HIGH:LOW;
+    byte dir = (steps > 0)? HIGH:LOW;
     steps = abs(steps);
     digitalWrite(DIR_PIN, dir);
     // Not sure why * 70
@@ -261,54 +261,103 @@ void rotate(int steps, byte speed){
 /* }}} */
 /* dampRotate -------------------------------------------------- {{{ */
 
-void dampRotate(int steps, byte maxSpeed) {
-    int dir = (steps > 0)? HIGH:LOW;
+void dampRotate(int steps) {
+    byte dir = (steps > 0)? HIGH:LOW;
     steps = abs(steps);
     digitalWrite(DIR_PIN, dir);
-    // Not sure why * 70
-    float floatSpeed = float(maxSpeed);
-    float usDelay = (1 / (floatSpeed / 100)) * 70;
 
-    int quarterSteps = steps / 4;
 
-    usDelay += quarterSteps * 5;
-    for(int j = 0; j < quarterSteps; j++){
-        usDelay -= 5;
-        digitalWrite(STEP_PIN, HIGH);
-        delayMicroseconds(usDelay);
-        digitalWrite(STEP_PIN, LOW);
-        delayMicroseconds(usDelay);
+    unsigned int dampDelay = 5000;
+    unsigned int normalDelay = 3000;
+
+    /* unsigned int dampChange = 100; */
+    unsigned int dampSteps = 20;
+    unsigned int dampChange = (dampDelay - normalDelay) / dampSteps;
+    // 7000 corresponds to feeding 1 to rotate speed
+
+    //Compensate if steps are less than dampSteps * 2
+    if (steps < dampSteps * 2){
+        dampSteps = steps / 2;
     }
 
-    for(int i = 0; i < steps - quarterSteps * 2; i++){
+    //Begin Rotate Slow to Fast
+    for (int j = 0; j < dampSteps; j++){
         digitalWrite(STEP_PIN, HIGH);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(dampDelay);
         digitalWrite(STEP_PIN, LOW);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(dampDelay);
+        dampDelay -= dampChange;
     }
 
-    for(int j = 0; j < quarterSteps; j++){
-        usDelay += 5;
+    // Full Speed rotations (7000)
+    int fullSpeedSteps = steps - dampSteps * 2;
+    for (int k = 0; k < fullSpeedSteps; k++){
         digitalWrite(STEP_PIN, HIGH);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(normalDelay);
         digitalWrite(STEP_PIN, LOW);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(normalDelay);
     }
+
+    // End Rotate Fast to Slow
+    dampDelay = normalDelay;
+
+    // Compensate for int division
+    if (steps < dampSteps * 2 && dampSteps % 2 != 0){
+        dampSteps += 1;
+    }
+
+    for (int j = 0; j < dampSteps; j++){
+        digitalWrite(STEP_PIN, HIGH);
+        delayMicroseconds(dampDelay);
+        digitalWrite(STEP_PIN, LOW);
+        delayMicroseconds(dampDelay);
+        dampDelay += dampChange;
+    }
+
+    /* // Not sure why * 70 */
+    /* float floatSpeed = float(maxSpeed); */
+    /* float usDelay = (1 / (floatSpeed / 100)) * 70; */
+
+    /* int quarterSteps = steps / 4; */
+
+    /* usDelay += quarterSteps * 5; */
+    /* for(int j = 0; j < quarterSteps; j++){ */
+    /*     usDelay -= 5; */
+    /*     digitalWrite(STEP_PIN, HIGH); */
+    /*     delayMicroseconds(usDelay); */
+    /*     digitalWrite(STEP_PIN, LOW); */
+    /*     delayMicroseconds(usDelay); */
+    /* } */
+
+    /* for(int i = 0; i < steps - quarterSteps * 2; i++){ */
+    /*     digitalWrite(STEP_PIN, HIGH); */
+    /*     delayMicroseconds(usDelay); */
+    /*     digitalWrite(STEP_PIN, LOW); */
+    /*     delayMicroseconds(usDelay); */
+    /* } */
+
+    /* for(int j = 0; j < quarterSteps; j++){ */
+    /*     usDelay += 5; */
+    /*     digitalWrite(STEP_PIN, HIGH); */
+    /*     delayMicroseconds(usDelay); */
+    /*     digitalWrite(STEP_PIN, LOW); */
+    /*     delayMicroseconds(usDelay); */
+    /* } */
 }
 
 /* }}} */
 /* sleepOn -------------------------------------------------- {{{ */
 
 void sleepOn(){
-    digitalWrite(SLEEP_PIN, LOW);
+    digitalWrite(SLEEP_PIN, HIGH);
 }
 
 /* }}} */
 /* sleepOff -------------------------------------------------- {{{ */
 
 void sleepOff(){
-    digitalWrite(SLEEP_PIN, HIGH);
-    delay(2);
+    digitalWrite(SLEEP_PIN, LOW);
+    delay(5);
 }
 
 /* }}} */
@@ -737,7 +786,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     CubicEase cubicTimeEase;
     cubicTimeEase.setDuration(shots);
     cubicTimeEase.setTotalChangeInPosition(instanceTime * 1000);
-    unsigned double timeEaseDelay = 0;
+    double timeEaseDelay = 0;
 
     long baseStepInterval = trackLen / shots;
     unsigned long stepStart = 0;
@@ -822,10 +871,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
                 break;
         }
         /* }}} */
-        //turn off sleep
-        if(sleep == 1){
-            sleepOff();
-        }
         if (dir > 1){
             stepInterval *= -1;
         }
@@ -833,8 +878,13 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         if(EEPROM_DIRECTION == 2){
             stepInterval *= -1;
         }
+        //turn off sleep
+        if(sleep == 1){
+            sleepOff();
+        }
 
-        dampRotate(stepInterval, 15);
+        dampRotate(stepInterval);
+
         /* turn on sleep */
         if(sleep == 1){
             sleepOn();
@@ -934,38 +984,38 @@ void showTimelapseProgress(unsigned long currentShot, int totalShots){
 
 /* }}} */
 /* quadraticEase {{{ */
-void quadraticEase(int dir, int steps, float speed, unsigned long time){
-    QuadraticEase quadEase;
-    QuadraticEase timeEase;
-    quadEase.setDuration(steps);
-    quadEase.setTotalChangeInPosition(35000);
-    timeEase.setDuration(steps);
-    unsigned long total_time = time * 1000;
-    timeEase.setTotalChangeInPosition(total_time);
-    unsigned long counter = 0;
-    unsigned long time_counter = 0;
-    unsigned long time_in_millis = time * 1000;
-    for(float i = 1; i <= steps; i++){
-        float move_steps = quadEase.easeInOut(i) - quadEase.easeInOut(i - 1);
-        unsigned long move_start = millis();
-        rotate(int(move_steps * dir), speed);
-        delay(150);
-        takePicture();
-        counter += int(move_steps);
-        unsigned long move_end = millis();
-        unsigned long move_time = move_end - move_start;
+/* void quadraticEase(int dir, int steps, float speed, unsigned long time){ */
+/*     QuadraticEase quadEase; */
+/*     QuadraticEase timeEase; */
+/*     quadEase.setDuration(steps); */
+/*     quadEase.setTotalChangeInPosition(35000); */
+/*     timeEase.setDuration(steps); */
+/*     unsigned long total_time = time * 1000; */
+/*     timeEase.setTotalChangeInPosition(total_time); */
+/*     unsigned long counter = 0; */
+/*     unsigned long time_counter = 0; */
+/*     unsigned long time_in_millis = time * 1000; */
+/*     for(float i = 1; i <= steps; i++){ */
+/*         float move_steps = quadEase.easeInOut(i) - quadEase.easeInOut(i - 1); */
+/*         unsigned long move_start = millis(); */
+/*         rotate(int(move_steps * dir), speed); */
+/*         delay(150); */
+/*         takePicture(); */
+/*         counter += int(move_steps); */
+/*         unsigned long move_end = millis(); */
+/*         unsigned long move_time = move_end - move_start; */
 
-        float time_delay = timeEase.easeInOut(i) - timeEase.easeInOut(i - 1);
-        /* unsigned long time_delay = time_in_millis / steps; */
-        time_counter += time_delay;
+/*         float time_delay = timeEase.easeInOut(i) - timeEase.easeInOut(i - 1); */
+/*         /1* unsigned long time_delay = time_in_millis / steps; *1/ */
+/*         time_counter += time_delay; */
 
-        if (time_delay < move_time){
-            delay(0);
-        } else {
-            delay(int(time_delay) - move_time);
-        }
-    }
-}
+/*         if (time_delay < move_time){ */
+/*             delay(0); */
+/*         } else { */
+/*             delay(int(time_delay) - move_time); */
+/*         } */
+/*     } */
+/* } */
 /* }}} */
 
 /* }}} */
@@ -974,13 +1024,13 @@ void quadraticEase(int dir, int steps, float speed, unsigned long time){
 /* Realtime Menu Global Variables -------------------------------- {{{ */
 
 byte realtimeMenuLocation = 1;
-byte realtimeMenuMax = 7;
+byte realtimeMenuMax = 6;
 byte realtimeMenuMin = 1;
 /* unsigned int trackLen = 34800; */
 int realtimeNumShots = 500;
-unsigned long realtimeMinDelay = 1; // Seconds
-unsigned long realtimeMaxDelay = 3600; // Seconds
-unsigned long realtimeCurrentDelay = 10;
+/* unsigned long realtimeMinDelay = 1; // Seconds */
+/* unsigned long realtimeMaxDelay = 3600; // Seconds */
+/* unsigned long realtimeCurrentDelay = 10; */
 byte realtimeCurrentMaxSpeed = 25;
 byte realtimeCurrentMinSpeed = 10;
 byte realtimeMaxSpeed = 99;
@@ -1035,34 +1085,34 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
             lcdPrint(realtimeModeSpeedLineOne, utilityString);
             break;
-        case 2: // Start Delay {{{
-            if (realtimeCurrentDelay < 60){
-                realtimeCurrentDelay += incrementVar(input, counter);
-            } else {
-                realtimeCurrentDelay += incrementVar(input, counter) * 60;
-            }
-            realtimeCurrentDelay = reflow(realtimeCurrentDelay, realtimeMinDelay, realtimeMaxDelay);
+        /* case 2: // Start Delay {{{ */
+        /*     if (realtimeCurrentDelay < 60){ */
+        /*         realtimeCurrentDelay += incrementVar(input, counter); */
+        /*     } else { */
+        /*         realtimeCurrentDelay += incrementVar(input, counter) * 60; */
+        /*     } */
+        /*     realtimeCurrentDelay = reflow(realtimeCurrentDelay, realtimeMinDelay, realtimeMaxDelay); */
 
-            if (realtimeCurrentDelay < 60){
-                sprintf(utilityString, "%d seconds   ", realtimeCurrentDelay);
-            } else {
-                sprintf(utilityString, "%d minutes   ", realtimeCurrentDelay / 60);
-            }
-            lcdPrint(timelapseModeDelayLineOne, utilityString);
-            break; // }}}
-        case 3: //Easing Function
+        /*     if (realtimeCurrentDelay < 60){ */
+        /*         sprintf(utilityString, "%d seconds   ", realtimeCurrentDelay); */
+        /*     } else { */
+        /*         sprintf(utilityString, "%d minutes   ", realtimeCurrentDelay / 60); */
+        /*     } */
+        /*     lcdPrint(timelapseModeDelayLineOne, utilityString); */
+        /*     break; // }}} */
+        case 2: //Easing Function
             realtimeEasingFunction -= incrementVar(input, 0);
             realtimeEasingFunction = reflow(realtimeEasingFunction, realtimeEasingFunctionMin, realtimeEasingFunctionMax);
             sprintf(utilityString, "%s       ", easingFunctionName(realtimeEasingFunction));
             lcdPrint(realtimeModeEasingFunctionLineOne, utilityString);
             break;
-        case 4: //Easing Curve
+        case 3: //Easing Curve
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
             lcdPrint(realtimeModeEasingCurveLineOne, utilityString);
             break;
-        case 5://Direction
+        case 4://Direction
             realtimeDirection += incrementVar(input, 0);
             realtimeDirection = reflow(realtimeDirection, 1, 2);
             if (realtimeDirection == 1){
@@ -1072,10 +1122,10 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
                 lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
             }
             break;
-        case 6: //
+        case 5: //
             lcdPrint("Move Right to   ", "start RT move  >");
             break;
-        case 7:
+        case 6:
             lcdPrint("Starting Move...", "Sel to cancel   ");
             /* delay(1000); */
             startRealtime();
@@ -1097,7 +1147,7 @@ void startRealtime(){
 
 void realtime(byte dir, int shots){
 
-    int realtimeSpeedDiff = realtimeCurrentMaxSpeed - realtimeCurrentMinSpeed;
+    float realtimeSpeedDiff = (float(realtimeCurrentMaxSpeed * 1.0) - float(realtimeCurrentMinSpeed * 1.0)) * 1000.0;
 
     // Slider Easing
     QuadraticEase realtimeQuadEase;
@@ -1111,17 +1161,19 @@ void realtime(byte dir, int shots){
     cubicEase.setTotalChangeInPosition(realtimeSpeedDiff);
 
     long stepInterval = 1;
-    long baseStepInterval = trackLen / shots;
+    long baseStepInterval = (trackLen - 2500) / shots;
     /* unsigned long stepStart = 0; */
     /* unsigned long stepLen = 0; */
     byte counter = 0;
-    byte instanceSpeed = 1;
-    instanceSpeed = realtimeCurrentMaxSpeed;
+    float instanceSpeed = 1.0;
+    instanceSpeed = float(realtimeCurrentMaxSpeed) * 1000.0;
+    float minSpeed = float(realtimeCurrentMinSpeed) * 1000.0;
 
-    //LCD Print Execute
+    takeVideo();
+    delay(3000);
+    /* takePicture(); */
+    /* delay(500); */
 
-    // Pre Delay
-    /* delay(realtimeCurrentDelay * 1000); */
 
     for (int i = 1; i <= shots; i++){
         stepInterval = baseStepInterval;
@@ -1130,7 +1182,7 @@ void realtime(byte dir, int shots){
         /* Slider Easing ----------------------------------------- {{{ */
         switch(realtimeEasingFunction){
             case LINEAR:
-                instanceSpeed = realtimeCurrentMaxSpeed - realtimeCurrentMinSpeed;
+                instanceSpeed = realtimeSpeedDiff;
                 break;
             case QUADRATIC:
                 switch(realtimeEasingCurve){
@@ -1199,10 +1251,17 @@ void realtime(byte dir, int shots){
         if(EEPROM_DIRECTION == 2){
             stepInterval *= -1;
         }
-        /* sprintf(utilityString, "%2d              ", instanceSpeed + realtimeCurrentMinSpeed); */
-        /* lcdPrint(realtimeModeProgressLineOne, utilityString); */
 
-        rotate(stepInterval, instanceSpeed + realtimeCurrentMinSpeed);
+        if (i == 1){
+            dampStart(stepInterval, (instanceSpeed + minSpeed));
+        }
+
+        preciseRotate(stepInterval, (instanceSpeed + minSpeed));
+
+        if (i == shots){
+            dampEnd(stepInterval, (instanceSpeed + minSpeed));
+        }
+
         if(select()){
             counter += 1;
             if(counter > 4){
@@ -1212,10 +1271,84 @@ void realtime(byte dir, int shots){
             counter = 0;
         }
     }
+
+    delay(3000);
+    takeVideo();
     sleepOff();
     return;
 }
 
+/* }}} */
+/* preciseRotate -------------------------------------------------- {{{ */
+
+void preciseRotate(int steps, float speed){
+    byte dir = (steps > 0)? HIGH:LOW;
+    steps = abs(steps);
+    digitalWrite(DIR_PIN, dir);
+    // Not sure why * 70
+    float speedDivisor = speed / 100000.0;
+    float speedQuotient = 1.0 / speedDivisor;
+    float usDelay = speedQuotient * 70.0;
+
+    for(int i = 0; i < steps; i++){
+        digitalWrite(STEP_PIN, HIGH);
+        delayMicroseconds(usDelay);
+        digitalWrite(STEP_PIN, LOW);
+        delayMicroseconds(usDelay);
+    }
+}
+
+/* }}} */
+/* dampStart -------------------------------------------------- {{{ */
+
+void dampStart(int steps, float dampEndSpeed) {
+    byte dir = (steps > 0)? HIGH:LOW;
+    steps = abs(steps);
+    digitalWrite(DIR_PIN, dir);
+
+    float speedDivisor = dampEndSpeed / 100000.0;
+    float speedQuotient = 1.0 / speedDivisor;
+    float usDelay = speedQuotient * 70.0;
+
+    float dampDelay = 1500.0;
+    float dampChange = 1.0;
+
+    //Begin Rotate Slow to Fast
+    while(dampDelay > usDelay){
+        digitalWrite(STEP_PIN, HIGH);
+        delayMicroseconds(dampDelay);
+        digitalWrite(STEP_PIN, LOW);
+        delayMicroseconds(dampDelay);
+        dampDelay -= dampChange;
+    }
+    return;
+}
+
+/* }}} */
+/* dampEnd -------------------------------------------------- {{{ */
+
+void dampEnd(int steps, float dampEndSpeed) {
+    byte dir = (steps > 0)? HIGH:LOW;
+    steps = abs(steps);
+    digitalWrite(DIR_PIN, dir);
+
+    float speedDivisor = dampEndSpeed / 100000.0;
+    float speedQuotient = 1.0 / speedDivisor;
+    float usDelay = speedQuotient * 70.0;
+
+    float dampDelay = 1500.0;
+    float dampChange = 1.0;
+
+    //Begin Rotate Fast to Slow
+    while(dampDelay > usDelay){
+        digitalWrite(STEP_PIN, HIGH);
+        delayMicroseconds(usDelay);
+        digitalWrite(STEP_PIN, LOW);
+        delayMicroseconds(usDelay);
+        usDelay += dampChange;
+    }
+    return;
+}
 /* }}} */
 
 /* }}} */
@@ -1224,6 +1357,12 @@ void realtime(byte dir, int shots){
 void takePicture(){
     digitalWrite(SHUTTER_PIN, HIGH);
     delay(150);
+    digitalWrite(SHUTTER_PIN, LOW);
+}
+
+void takeVideo(){
+    digitalWrite(SHUTTER_PIN, HIGH);
+    delay(1100);
     digitalWrite(SHUTTER_PIN, LOW);
 }
 
@@ -1457,7 +1596,7 @@ int reflow(int input, int minOutput, int maxOutput){
 /* secondaryMenuShow ---------------------------------------------- {{{ */
 
 void secondaryMenuShow(int input){
-    int flashDelay = 2500;
+    int flashDelay = 250;
     switch(input){
         case 1: // Timelapse
             lcdPrint(enteringTimelapseModeLineOne, holdSelToExit);
@@ -1534,6 +1673,8 @@ void setup()
     /* Switch Pin Setup */
     pinMode(MOTOR_SWITCH_PIN, INPUT);
     pinMode(END_SWITCH_PIN, INPUT);
+
+    sleepOff();
 }
 
 /* }}} */
