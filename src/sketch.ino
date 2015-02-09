@@ -69,12 +69,12 @@ char utilityString[17] = "";
 
 /* Main Menu Strings {{{ */
 
-char selectModeString[17] = "Select Mode:    ";
-char timelapseStringSelected[17] = "1.Timelapse    >";
-char realtimeStringSelected[17] = "2.Realtime     >";
-char commandStringSelected[17] = "3.Commander    >";
-char directionStringSelected[17] = "4.Direction    >";
-char debugStringSelected[17] = "5.Debug        >";
+const char selectModeString[17] = "Select Mode:    ";
+const char timelapseStringSelected[17] = "1.Timelapse    >";
+const char realtimeStringSelected[17] = "2.Realtime     >";
+const char commandStringSelected[17] = "3.Commander    >";
+const char directionStringSelected[17] = "4.Direction    >";
+const char debugStringSelected[17] = "5.Debug        >";
 
 /* }}} */
 /* Timelapse Menu Strings {{{ */
@@ -1072,7 +1072,7 @@ void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
     realtimeMenuLocation = 1;
     lcdPrint(realtimeModeCompletedLineOne, holdSelToExit);
-    return;
+
 }
 
 /* }}} */
@@ -1428,8 +1428,21 @@ void lcdPrint(char* line1, char* line2){
     lcd.print(line2);
 }
 /* }}} */
+/* constLcdPrint {{{ */
+void constLcdPrint(const char* line1, const char* line2){
+    //Prints two 16 char lines to the lcd
+
+    /* Line 1 */
+    lcd.setCursor(0, 0); //Cursor Position, Line Number
+    lcd.print(line1);
+
+    /* Line 2 */
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+}
+/* }}} */
 /* menuOptions {{{ */
-char* menuOptions(int input){
+const char* menuOptions(int input){
     switch(input){
         case 1:
             return timelapseStringSelected;
@@ -1453,22 +1466,28 @@ char* menuOptions(int input){
 }
 /* }}} */
 /* menuShow {{{ */
-int currentMenuPosition = 1;
-int minMenuPosition = 1;
-int maxMenuPosition = 5;
+byte currentMenuPosition = 1;
+byte minMenuPosition = 1;
+byte maxMenuPosition = 5;
 
 void menuShow(){
+    lcd.clear();
+    constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
     while (directionTrigger(50, RIGHT) == true){
         int currentJoystickPosition = readJoystick(50);
         if (currentJoystickPosition == UP){
             currentMenuPosition -= 1;
+            currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition);
+            constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
         } else if (currentJoystickPosition == DOWN) {
             currentMenuPosition += 1;
+            currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition);
+            constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
         }
 
-        currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition);
+        /* currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition); */
 
-        lcdPrint(selectModeString, menuOptions(currentMenuPosition));
+        /* lcdPrint(selectModeString, menuOptions(currentMenuPosition)); */
     }
     secondaryMenuShow(currentMenuPosition);
     return;
