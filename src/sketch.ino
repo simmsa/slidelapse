@@ -173,7 +173,9 @@ char genericErrorLineTwo[17] = "Returning Home  ";
 char enteringRealtimeModeLineOne[17] = ">>>Realtime Mode";
 /* char enteringRealtimeModeLineTwo[17] = "Hold Sel to exit"; */
 
-char realtimeModeSpeedLineOne[17] = "Movement Speed: ";
+char realtimeModeMinSpeedLineOne[17] = "Move Min Speed: ";
+
+char realtimeModeMaxSpeedLineOne[17] = "Move Max Speed: ";
 /* char realtimeModeSpeedLineTwo[17] = ""; */
 
 /* char realtimeModeDelayLineTwo[17] = ""; */
@@ -944,7 +946,7 @@ void showTimelapseProgress(unsigned long currentShot, int totalShots){
 /* Realtime Menu Global Variables -------------------------------- {{{ */
 
 byte realtimeMenuLocation = 1;
-byte realtimeMenuMax = 5;
+byte realtimeMenuMax = 6;
 byte realtimeMenuMin = 1;
 /* unsigned int trackLen = 34800; */
 int realtimeNumShots = 500;
@@ -953,8 +955,10 @@ int realtimeNumShots = 500;
 /* unsigned long realtimeCurrentDelay = 10; */
 byte realtimeCurrentMaxSpeed = 25;
 byte realtimeCurrentMinSpeed = 10;
-byte realtimeMaxSpeed = 99;
-byte realtimeMinSpeed = 1;
+byte realtimeMaxMaxSpeed = 99;
+byte realtimeMaxMinSpeed = 1;
+byte realtimeMinMaxSpeed = 99;
+byte realtimeMinMinSpeed = 1;
 /* byte realtimeEasingFunction = LINEAR; */
 /* byte realtimeEasingFunctionMin = 1; */
 /* byte realtimeEasingFunctionMax = 4; */
@@ -999,11 +1003,20 @@ void configureRealtime(){
 /* incrementRealtimeMenu {{{ */
 void incrementRealtimeMenu(int input, int currentMenu, int counter){
     switch(currentMenu){
-        case 1: //Speed
+        case 1: //Min Speed
+            realtimeCurrentMinSpeed += incrementVar(input, counter);
+            realtimeCurrentMinSpeed = reflow(realtimeCurrentMinSpeed, realtimeMinMinSpeed, realtimeMinMaxSpeed);
+            sprintf(utilityString, "%02d              ", realtimeCurrentMinSpeed);
+            lcdPrint(realtimeModeMinSpeedLineOne, utilityString);
+            break;
+        case 2: //Speed
+            if (realtimeCurrentMaxSpeed < realtimeCurrentMinSpeed) {
+                realtimeCurrentMaxSpeed = realtimeCurrentMinSpeed + 1;
+            }
             realtimeCurrentMaxSpeed += incrementVar(input, counter);
-            realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeMinSpeed, realtimeMaxSpeed);
+            realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeCurrentMinSpeed + 1, realtimeMaxMaxSpeed);
             sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
-            lcdPrint(realtimeModeSpeedLineOne, utilityString);
+            lcdPrint(realtimeModeMaxSpeedLineOne, utilityString);
             break;
         /* case 2: // Start Delay {{{ */
         /*     if (realtimeCurrentDelay < 60){ */
@@ -1026,13 +1039,13 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
         /*     sprintf(utilityString, "%s       ", easingFunctionName(realtimeEasingFunction)); */
         /*     lcdPrint(realtimeModeEasingFunctionLineOne, utilityString); */
         /*     break; */
-        case 2: //Easing Curve
+        case 3: //Easing Curve
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
             lcdPrint(realtimeModeEasingCurveLineOne, utilityString);
             break;
-        case 3://Direction
+        case 4://Direction
             realtimeDirection += incrementVar(input, 0);
             realtimeDirection = reflow(realtimeDirection, 1, 2);
             if (realtimeDirection == 1){
@@ -1042,10 +1055,10 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
                 lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
             }
             break;
-        case 4: //
+        case 5: //
             lcdPrint("Move Right to   ", "start RT move  >");
             break;
-        case 5:
+        case 6:
             lcdPrint("Starting Move...", "Sel to cancel   ");
             /* delay(1000); */
             startRealtime();
