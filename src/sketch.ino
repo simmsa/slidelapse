@@ -928,7 +928,7 @@ void showTimelapseProgress(unsigned long currentShot, int totalShots){
 /* Realtime Menu Global Variables -------------------------------- {{{ */
 
 byte realtimeMenuLocation = 1;
-byte realtimeMenuMax = 4;
+byte realtimeMenuMax = 5;
 byte realtimeMenuMin = 1;
 /* unsigned int trackLen = 34800; */
 int realtimeNumShots = 500;
