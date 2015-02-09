@@ -58,8 +58,8 @@ const byte NONE = 0;
 const byte LINEAR = 1;
 const byte EASEIN = 2;
 const byte EASEOUT = 3;
-const byte EASEINOUT = 4;
-const byte EASEOUTIN = 5;
+const byte FASTSLOWFAST = 4;
+const byte SLOWFASTSLOW = 5;
 
 /* }}} */
 /* Menu Strings {{{ */
@@ -773,19 +773,19 @@ int incrementVar(int input, int counter){
 const char* easingCurveName(byte input){
     switch(input){
         case 1:
-            return "1. Linear   ";
+            return "1. Linear       ";
             break;
         case 2:
-            return "2. Ease In  ";
+            return "2. Ease In      ";
             break;
         case 3:
-            return "3. Ease Out ";
+            return "3. Ease Out     ";
             break;
         case 4:
-            return "4. EaseInOut";
+            return "4. FastSlowFast ";
             break;
         case 5:
-            return "5. EaseOutIn";
+            return "5. SlowFastSlow ";
             break;
     }
 }
@@ -818,28 +818,6 @@ void startTimelapse(){
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
     unsigned long shotDelay = instanceTime * 1000 / shots;
-
-    // Slider Easing
-    /* QuadraticEase quadEase; */
-    /* quadEase.setDuration(shots); */
-    /* quadEase.setTotalChangeInPosition(trackLen); */
-    /* SineEase sineEase; */
-    /* sineEase.setDuration(shots); */
-    /* sineEase.setTotalChangeInPosition(trackLen); */
-    /* CubicEase cubicEase; */
-    /* cubicEase.setDuration(shots); */
-    /* cubicEase.setTotalChangeInPosition(trackLen); */
-
-    // Time Easing
-    /* QuadraticEase quadTimeEase; */
-    /* quadTimeEase.setDuration(shots); */
-    /* quadTimeEase.setTotalChangeInPosition(instanceTime * 1000); */
-    /* SineEase sineTimeEase; */
-    /* sineTimeEase.setDuration(shots); */
-    /* sineTimeEase.setTotalChangeInPosition(instanceTime * 1000); */
-    /* CubicEase cubicTimeEase; */
-    /* cubicTimeEase.setDuration(shots); */
-    /* cubicTimeEase.setTotalChangeInPosition(instanceTime * 1000); */
     double timeEaseDelay = 0;
 
     long baseStepInterval = trackLen / shots;
@@ -872,10 +850,10 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
             case EASEOUT:
                 stepInterval = easeOutStep(i, shots, trackLen);
                 break;
-            case EASEINOUT:
+            case FASTSLOWFAST:
                 stepInterval = fastSlowFastStep(i, shots, trackLen);
                 break;
-            case EASEOUTIN:
+            case SLOWFASTSLOW:
                 stepInterval = slowFastSlowStep(i, shots, trackLen);
                 break;
         }
@@ -916,10 +894,10 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
             case EASEOUT:
                 shotDelay = easeOutStep(i, shots, trackLen);
                 break;
-            case EASEINOUT:
+            case FASTSLOWFAST:
                 shotDelay = fastSlowFastStep(i, shots, trackLen);
                 break;
-            case EASEOUTIN:
+            case SLOWFASTSLOW:
                 shotDelay = slowFastSlowStep(i, shots, trackLen);
                 break;
         }
@@ -942,40 +920,6 @@ void showTimelapseProgress(unsigned long currentShot, int totalShots){
     lcdPrint(timelapseModeRunningTimelapseLineOne, utilityString);
 }
 
-/* }}} */
-/* quadraticEase {{{ */
-/* void quadraticEase(int dir, int steps, float speed, unsigned long time){ */
-/*     QuadraticEase quadEase; */
-/*     QuadraticEase timeEase; */
-/*     quadEase.setDuration(steps); */
-/*     quadEase.setTotalChangeInPosition(35000); */
-/*     timeEase.setDuration(steps); */
-/*     unsigned long total_time = time * 1000; */
-/*     timeEase.setTotalChangeInPosition(total_time); */
-/*     unsigned long counter = 0; */
-/*     unsigned long time_counter = 0; */
-/*     unsigned long time_in_millis = time * 1000; */
-/*     for(float i = 1; i <= steps; i++){ */
-/*         float move_steps = quadEase.easeInOut(i) - quadEase.easeInOut(i - 1); */
-/*         unsigned long move_start = millis(); */
-/*         rotate(int(move_steps * dir), speed); */
-/*         delay(150); */
-/*         takePicture(); */
-/*         counter += int(move_steps); */
-/*         unsigned long move_end = millis(); */
-/*         unsigned long move_time = move_end - move_start; */
-
-/*         float time_delay = timeEase.easeInOut(i) - timeEase.easeInOut(i - 1); */
-/*         /1* unsigned long time_delay = time_in_millis / steps; *1/ */
-/*         time_counter += time_delay; */
-
-/*         if (time_delay < move_time){ */
-/*             delay(0); */
-/*         } else { */
-/*             delay(int(time_delay) - move_time); */
-/*         } */
-/*     } */
-/* } */
 /* }}} */
 
 /* }}} */
@@ -1152,13 +1096,13 @@ void realtime(byte dir, int shots){
                 /* instanceSpeed = realtimeQuadEase.easeOut(i); */
                 instanceSpeed = easeOutStep(i, shots, trackLen);
                 break;
-            case EASEINOUT:
+            case FASTSLOWFAST:
                 /* instanceSpeed = realtimeQuadEase.easeInOut(i); */
-                instanceSpeed = slowFastSlowStep(i, shots, trackLen);
-                break;
-            case EASEOUTIN:
-                /* instanceSpeed = realtimeQuadEase.easeIn(revI); */
                 instanceSpeed = fastSlowFastStep(i, shots, trackLen);
+                break;
+            case SLOWFASTSLOW:
+                /* instanceSpeed = realtimeQuadEase.easeIn(revI); */
+                instanceSpeed = slowFastSlowStep(i, shots, trackLen);
                 break;
         }
         /* }}} */
