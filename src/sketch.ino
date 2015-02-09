@@ -1,5 +1,7 @@
 /* Libraries {{{ */
 
+#include <cmath>
+
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
@@ -238,6 +240,58 @@ byte readJoystick(int buttonDelay){
 }
 
 /* }}} */
+
+/* }}} */
+/* Bezier Functions -------------------------------------------------- {{{ */
+
+double calculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
+    double coefficient = trackLen / (pow(totalSteps, exponent));
+    return coefficient * (pow(currentStep, exponent));
+}
+
+int calculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
+    return round(calculateCoefficient(currentStep, totalSteps, trackLen, exponent) - calculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent));
+}
+
+int easeInStep(int currentStep, int totalSteps, unsigned long trackLen){
+    return calculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0);
+}
+
+double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
+    double coefficient = -1 * (double(trackLen) / pow(double(totalSteps), exponent));
+    return coefficient * pow(currentStep - totalSteps, exponent) + trackLen;
+}
+
+int reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent) {
+    return round(reverseCalculateCoefficient(currentStep, totalSteps, trackLen, exponent) - reverseCalculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent));
+}
+
+int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
+    return reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0);
+}
+
+double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
+    double t = (totalSteps - currentStep) / double(totalSteps);
+    double b1 = t * t * t;
+    double b2 = 3 * t * t * (1 - t);
+    double b3 = 3 * t * (1 - t) * (1 - t);
+    double b4 = (1 - t) * (1 - t) * (1 - t);
+    double controlPoint1 = control1Percent * trackLen;
+    double controlPoint2 = control2Percent * trackLen;
+    return 0 * b1 + controlPoint1 * b2 + controlPoint2 * b3 + double(trackLen) * b4;
+}
+
+int cubicBezierStep(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
+    return round(cubicBezier(currentStep, totalSteps, trackLen, control1Percent, control2Percent) - cubicBezier(currentStep - 1, totalSteps, trackLen, control1Percent, control2Percent));
+}
+
+int slowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen){
+    return cubicBezierStep(currentStep, totalSteps, trackLen, 0.0, 1.0);
+}
+
+int fastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen){
+    return cubicBezierStep(currentStep, totalSteps, trackLen, 1.0, 0.0);
+}
 
 /* }}} */
 /* Timelapse Functions {{{ */
