@@ -1358,7 +1358,7 @@ void setup()
     lcd.print("   Slidelapse");
     lcd.setCursor(0, 1);
     lcd.print(" Version 0.7.0");
-    delay(3000);
+    delay(1500);
     lcd.clear();
 
     /* EEPROM Direction Read */
