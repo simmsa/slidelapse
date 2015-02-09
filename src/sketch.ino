@@ -249,12 +249,16 @@ double calculateCoefficient(int currentStep, int totalSteps, unsigned long track
     return coefficient * (pow(currentStep, exponent));
 }
 
-int calculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
-    return round(calculateCoefficient(currentStep, totalSteps, trackLen, exponent) - calculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent));
+double calculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
+    return calculateCoefficient(currentStep, totalSteps, trackLen, exponent) - calculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent);
+}
+
+double preciseEaseInStep(int currentStep, int totalSteps, unsigned long len) {
+    return calculateCoefficient(currentStep, totalSteps, len, 2.0);
 }
 
 int easeInStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return calculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0);
+    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0));
 }
 
 double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
@@ -262,12 +266,16 @@ double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned lon
     return coefficient * pow(currentStep - totalSteps, exponent) + trackLen;
 }
 
-int reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent) {
-    return round(reverseCalculateCoefficient(currentStep, totalSteps, trackLen, exponent) - reverseCalculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent));
+double reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent) {
+    return reverseCalculateCoefficient(currentStep, totalSteps, trackLen, exponent) - reverseCalculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent);
+}
+
+double preciseEaseOutStep(int currentStep, int totalSteps, unsigned long len){
+    return reverseCalculateCoefficient(currentStep, totalSteps, len, 2.0);
 }
 
 int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0);
+    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0));
 }
 
 double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
@@ -281,16 +289,24 @@ double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, doub
     return 0 * b1 + controlPoint1 * b2 + controlPoint2 * b3 + double(trackLen) * b4;
 }
 
-int cubicBezierStep(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
-    return round(cubicBezier(currentStep, totalSteps, trackLen, control1Percent, control2Percent) - cubicBezier(currentStep - 1, totalSteps, trackLen, control1Percent, control2Percent));
+double cubicBezierStep(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
+    return cubicBezier(currentStep, totalSteps, trackLen, control1Percent, control2Percent) - cubicBezier(currentStep - 1, totalSteps, trackLen, control1Percent, control2Percent);
+}
+
+double preciseSlowFastSlowStep(int currentStep, int totalSteps, unsigned long len){
+    return cubicBezierStep(currentStep, totalSteps, len, 0.0, 1.0);
 }
 
 int slowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return cubicBezierStep(currentStep, totalSteps, trackLen, 0.0, 1.0);
+    return round(cubicBezierStep(currentStep, totalSteps, trackLen, 0.0, 1.0));
+}
+
+double preciseFastSlowFastStep(int currentStep, int totalSteps, unsigned long len){
+    return cubicBezierStep(currentStep, totalSteps, len, 1.0, 0.0);
 }
 
 int fastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return cubicBezierStep(currentStep, totalSteps, trackLen, 1.0, 0.0);
+    return round(cubicBezierStep(currentStep, totalSteps, trackLen, 1.0, 0.0));
 }
 
 /* }}} */
@@ -1065,7 +1081,7 @@ void realtime(byte dir, int shots){
     /* cubicEase.setTotalChangeInPosition(realtimeSpeedDiff); */
 
     long stepInterval = 1;
-    long baseStepInterval = (trackLen - 2500) / shots;
+    long baseStepInterval = (trackLen - 2500) / shots; // Accounting for rev up / down
     /* unsigned long stepStart = 0; */
     /* unsigned long stepLen = 0; */
     byte counter = 0;
@@ -1085,24 +1101,24 @@ void realtime(byte dir, int shots){
 
         /* Slider Easing ----------------------------------------- {{{ */
         switch(realtimeEasingCurve){
-            case LINEAR:
-                instanceSpeed = realtimeSpeedDiff;
-                break;
+            /* case LINEAR: */
+            /*     instanceSpeed = realtimeSpeedDiff; */
+            /*     break; */
             case EASEIN:
                 /* instanceSpeed = realtimeQuadEase.easeIn(i); */
-                instanceSpeed = easeInStep(i, shots, realtimeSpeedDiff);
+                instanceSpeed = float(preciseEaseInStep(i, shots, realtimeSpeedDiff));
                 break;
             case EASEOUT:
                 /* instanceSpeed = realtimeQuadEase.easeOut(i); */
-                instanceSpeed = easeOutStep(i, shots, realtimeSpeedDiff);
+                instanceSpeed = float(preciseEaseOutStep(i, shots, realtimeSpeedDiff));
                 break;
             case FASTSLOWFAST:
                 /* instanceSpeed = realtimeQuadEase.easeInOut(i); */
-                instanceSpeed = fastSlowFastStep(i, shots, realtimeSpeedDiff);
+                instanceSpeed = float(preciseFastSlowFastStep(i, shots, realtimeSpeedDiff) * 1000.0);
                 break;
             case SLOWFASTSLOW:
                 /* instanceSpeed = realtimeQuadEase.easeIn(revI); */
-                instanceSpeed = slowFastSlowStep(i, shots, realtimeSpeedDiff);
+                instanceSpeed = float(preciseSlowFastSlowStep(i, shots, realtimeSpeedDiff) * 1000.0);
                 break;
         }
         /* }}} */
