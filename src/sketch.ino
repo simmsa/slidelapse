@@ -1090,19 +1090,19 @@ void realtime(byte dir, int shots){
                 break;
             case EASEIN:
                 /* instanceSpeed = realtimeQuadEase.easeIn(i); */
-                instanceSpeed = easeInStep(i, shots, trackLen);
+                instanceSpeed = easeInStep(i, shots, realtimeSpeedDiff);
                 break;
             case EASEOUT:
                 /* instanceSpeed = realtimeQuadEase.easeOut(i); */
-                instanceSpeed = easeOutStep(i, shots, trackLen);
+                instanceSpeed = easeOutStep(i, shots, realtimeSpeedDiff);
                 break;
             case FASTSLOWFAST:
                 /* instanceSpeed = realtimeQuadEase.easeInOut(i); */
-                instanceSpeed = fastSlowFastStep(i, shots, trackLen);
+                instanceSpeed = fastSlowFastStep(i, shots, realtimeSpeedDiff);
                 break;
             case SLOWFASTSLOW:
                 /* instanceSpeed = realtimeQuadEase.easeIn(revI); */
-                instanceSpeed = slowFastSlowStep(i, shots, trackLen);
+                instanceSpeed = slowFastSlowStep(i, shots, realtimeSpeedDiff);
                 break;
         }
         /* }}} */
