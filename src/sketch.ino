@@ -1357,7 +1357,7 @@ void setup()
     lcd.begin(16, 2);
     lcd.print("   Slidelapse");
     lcd.setCursor(0, 1);
-    lcd.print(" Version 0.7.0");
+    lcd.print(" Version 0.8.0");
     delay(1500);
     lcd.clear();
 
