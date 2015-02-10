@@ -367,6 +367,7 @@ void findTrackLen(){
 /* }}} */
 /* commanderMode {{{ */
 void commanderMode(){
+    byte currentSpeed = 20;
     lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
     int direction = 1; // Odd is motor to end, Even is end to motor
     if (EEPROM_DIRECTION == 2){
@@ -375,9 +376,9 @@ void commanderMode(){
     while (selectTrigger(1000)){
         int xpos = analogRead(JOYSTICK_X_PIN);
         int ypos = analogRead(JOYSTICK_Y_PIN);
-        if (ypos == 1023){
+        if (ypos == 0){
             delay(500);
-            if (analogRead(JOYSTICK_Y_PIN) == 1023){
+            if (analogRead(JOYSTICK_Y_PIN) == 0){ // Joystick down
                 //Swap directions
                 direction += 1;
                 //Reprint lcd
@@ -392,28 +393,47 @@ void commanderMode(){
                 }
             }
         }
+        if (ypos == 1023){
+            delay(300);
+            if (analogRead(JOYSTICK_Y_PIN) == 1023){ // Joystick Up
+                // Increase Speed
+                currentSpeed += 10;
+                //Reprint lcd
+                currentSpeed = reflow(currentSpeed, 1, 100);
+                sprintf(utilityString, "Speed: %02d       ", currentSpeed);
+                lcdPrint(commandModeLineOne, utilityString);
+            } else {
+                if (direction % 2 == 1){
+                    delay(1000);
+                    lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
+                } else if (direction % 2 == 0){
+                    delay(1000);
+                    lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor);
+                }
+            }
+        }
         if (xpos > 523){
             if (direction % 2 == 1) {
                  // Motor to end
                 if (digitalRead(END_SWITCH_PIN) != HIGH){
-                    rotate(1, calcSpeed(xpos - 523, 500, 25));
+                    rotate(1, calcSpeed(xpos - 523, 500, currentSpeed));
                 }
             } else if (direction % 2 == 0){
                 //End to motor
                 if (digitalRead(MOTOR_SWITCH_PIN) != HIGH){
-                    rotate(-1, calcSpeed(xpos - 523, 500, 25));
+                    rotate(-1, calcSpeed(xpos - 523, 500, currentSpeed));
                 }
             }
         } else if (xpos < 500){
             if (direction % 2 == 1){
                 // Motor to end
                 if (digitalRead(MOTOR_SWITCH_PIN) != HIGH){
-                    rotate(-1, calcSpeed(abs(500 - xpos), 500, 25));
+                    rotate(-1, calcSpeed(abs(500 - xpos), 500, currentSpeed));
                 }
             } else if (direction % 2 == 0){
                 // End to Motor
                 if (digitalRead(END_SWITCH_PIN) != HIGH){
-                    rotate(1, calcSpeed(abs(500 - xpos), 500, 25));
+                    rotate(1, calcSpeed(abs(500 - xpos), 500, currentSpeed));
                 }
             }
         }
