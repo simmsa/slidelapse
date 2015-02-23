@@ -708,13 +708,12 @@ void startTimelapse(){
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
     unsigned long shotDelay = instanceTime * 1000 / shots;
-    double timeEaseDelay = 0;
 
-    long baseStepInterval = trackLen / shots;
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
     byte counter = 0;
-    long stepInterval = 0;
+    int baseStepInterval = trackLen / shots;
+    int stepInterval = 0;
 
     // Pre Delay
     delay(currentDelay * 1000);
