@@ -180,6 +180,8 @@ byte readJoystick(int buttonDelay){
 /* }}} */
 /* Bezier Functions -------------------------------------------------- {{{ */
 
+double easeAmount = 1.5;
+
 double calculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
     double coefficient = trackLen / (pow(totalSteps, exponent));
     return coefficient * (pow(currentStep, exponent));
@@ -190,11 +192,11 @@ double calculateCoefficientStep(int currentStep, int totalSteps, unsigned long t
 }
 
 double preciseEaseInStep(int currentStep, int totalSteps, unsigned long len) {
-    return calculateCoefficient(currentStep, totalSteps, len, 2.0);
+    return calculateCoefficient(currentStep, totalSteps, len, easeAmount);
 }
 
 int easeInStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0));
+    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
 }
 
 double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
@@ -207,11 +209,11 @@ double reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned
 }
 
 double preciseEaseOutStep(int currentStep, int totalSteps, unsigned long len){
-    return reverseCalculateCoefficient(currentStep, totalSteps, len, 2.0);
+    return reverseCalculateCoefficient(currentStep, totalSteps, len, easeAmount);
 }
 
 int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, 2.0));
+    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
 }
 
 double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
