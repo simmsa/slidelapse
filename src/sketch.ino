@@ -58,12 +58,12 @@ char utilityString[17] = "";
 
 /* Main Menu Strings {{{ */
 
-const char selectModeString[17] = "Select Mode:    ";
+const char selectModeString[17]        = "Select Mode:    ";
 const char timelapseStringSelected[17] = "1.Timelapse    >";
-const char realtimeStringSelected[17] = "2.Realtime     >";
-const char commandStringSelected[17] = "3.Commander    >";
-const char directionStringSelected[17] = "4.Direction    >";
-const char debugStringSelected[17] = "5.Debug        >";
+const char realtimeStringSelected[17]  = "2.Video        >";
+const char commandStringSelected[17]   = "3.Joystick     >";
+const char directionStringSelected[17] = "4.Set Direction>";
+const char debugStringSelected[17]     = "5.Debug        >";
 
 /* }}} */
 /* Timelapse Menu Strings {{{ */
