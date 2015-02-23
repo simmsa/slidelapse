@@ -779,16 +779,16 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         /* time easing ------------------------------------------ {{{ */
         switch(timingEasingCurve){
             case EASEIN:
-                shotDelay = easeInStep(i, shots, trackLen);
+                shotDelay = easeInStep(i, shots, instanceTime);
                 break;
             case EASEOUT:
-                shotDelay = easeOutStep(i, shots, trackLen);
+                shotDelay = easeOutStep(i, shots, instanceTime);
                 break;
             case FASTSLOWFAST:
-                shotDelay = fastSlowFastStep(i, shots, trackLen);
+                shotDelay = fastSlowFastStep(i, shots, instanceTime);
                 break;
             case SLOWFASTSLOW:
-                shotDelay = slowFastSlowStep(i, shots, trackLen);
+                shotDelay = slowFastSlowStep(i, shots, instanceTime);
                 break;
         }
         /* }}} */
