@@ -707,7 +707,8 @@ void startTimelapse(){
 /* timelapse -------------------------------------------------- {{{ */
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
-    unsigned long shotDelay = instanceTime * 1000 / shots;
+    instanceTime = instanceTime * 1000; // Convert from seconds to milliseconds.
+    unsigned long shotDelay = instanceTime / shots;
 
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
