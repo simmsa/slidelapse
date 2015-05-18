@@ -1,3 +1,8 @@
+/* Macros ----------------------------------------- {{{ */
+
+#define DEBUG_ON
+
+/* }}} */
 /* Libraries {{{ */
 
 #include <math.h>
@@ -5,6 +10,10 @@
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
+#ifdef DEBUG_ON
+#include <MemoryFree.h>
+#endif
+#include <avr/pgmspace.h>
 
 /* }}} */
 /* Pin Setup {{{ */
@@ -56,75 +65,138 @@ const byte SLOWFASTSLOW = 5;
 char holdSelToExit[17] = "Hold Sel to Exit";
 char utilityString[17] = "";
 
+const char holdSelToExitProgmem[17] PROGMEM = "Hold Sel to Exit";
+const char* selPointer[] PROGMEM = {
+    holdSelToExitProgmem
+};
+
 /* Main Menu Strings {{{ */
 
-const char selectModeString[17]        = "Select Mode:    ";
-const char timelapseStringSelected[17] = "1.Timelapse    >";
-const char realtimeStringSelected[17]  = "2.Video        >";
-const char commandStringSelected[17]   = "3.Joystick     >";
-const char directionStringSelected[17] = "4.Set Direction>";
-const char debugStringSelected[17]     = "5.Debug        >";
+const char selectModeString[17] PROGMEM        = "Select Mode:    ";
+const char timelapseStringSelected[17] PROGMEM = "1.Timelapse    >";
+const char realtimeStringSelected[17] PROGMEM  = "2.Video        >";
+const char commandStringSelected[17] PROGMEM   = "3.Joystick     >";
+const char directionStringSelected[17] PROGMEM = "4.Set Direction>";
+const char debugStringSelected[17] PROGMEM     = "5.Debug        >";
+const char* mainMenuStringPointers[] PROGMEM =
+{
+    selectModeString,
+    timelapseStringSelected,
+    realtimeStringSelected,
+    commandStringSelected,
+    directionStringSelected,
+    debugStringSelected
+};
 
 /* }}} */
 /* Timelapse Menu Strings {{{ */
 
-char enteringTimelapseModeLineOne[17] = ">>> Timelapse   ";
-/* char timelapseModeTrackLenLineOne[17] = "Find Track Len.."; */
-char timelapseModeNumShotsLineOne[17] = "Number of Shots:";
-char timelapseModeDurationLineOne[17] = "TL Duration:    ";
-char timelapseModeIntervalLineOne[17] = "Avg Interval:   ";
-char timelapseModeDelayLineOne[17] = "Start Delay:    ";
-char timelapseModeLongestShutterLineOne[17] = "Longest Shutter:";
-char timelapseModeSleepBetweenShotsLineOne[17] = "Sleep btw shots ";
-char timelapseModeLCDLineOne[17] = "Backlight on?:  ";
-char timelapseModeEasingCurveLineOne[17] = "Slide Ease Curv:";
-char timelapseModeTimeEasingFunctionLineOne[17] = "Time Ease Func: ";
-char timelapseModeTimeEasingCurveLineOne[17] = "Time Curve Func:";
-char timelapseModeDirectionLineOne[17] = "Movement Dir:   ";
-char timelapseModeDirectionLineTwoME[17] = "Motor -----> End";
-char timelapseModeDirectionLineTwoEM[17] = "End -----> Motor";
-char timelapseModeRunningTimelapseLineOne[17] = "Timelapse active";
-char timelapseModeCompletedLineOne[17] = "Timelapse Done  ";
+const char enteringTlMode[17] PROGMEM           = ">>> Timelapse   ";
+/* const char tlModeTrackLen[17] PROGMEM        = "Find Track Len.."; */
+const char tlModeNumShots[17] PROGMEM           = "Number of Shots:";
+const char tlModeDuration[17] PROGMEM           = "TL Duration:    ";
+const char tlModeInterval[17] PROGMEM           = "Avg Interval:   ";
+const char tlModeDelay[17] PROGMEM              = "Start Delay:    ";
+const char tlModeLongestShutter[17] PROGMEM     = "Longest Shutter:";
+const char tlModeSleepBetweenShots[17] PROGMEM  = "Sleep btw shots:";
+const char tlModeLCD[17] PROGMEM                = "Backlight on?:  ";
+const char tlModeEasingCurve[17] PROGMEM        = "Slide Ease Curv:";
+const char tlModeTimeEasingFunction[17] PROGMEM = "Time Ease Func: ";
+const char tlModeTimeEasingCurve[17] PROGMEM    = "Time Curve Func:";
+const char tlModeDirectionLineOne[17] PROGMEM   = "Movement Dir:   ";
+const char tlModeDirectionLineTwoME[17] PROGMEM = "Motor -----> End";
+const char tlModeDirectionLineTwoEM[17] PROGMEM = "End -----> Motor";
+const char tlModeRunningTl[17] PROGMEM          = "Timelapse active";
+const char tlModeCompleted[17] PROGMEM          = "Timelapse Done  ";
+const char* tlStringPointers[] PROGMEM = {
+    enteringTlMode           , // 0
+    tlModeNumShots           , // 1
+    tlModeDuration           , // 2
+    tlModeInterval           , // 3
+    tlModeDelay              , // 4
+    tlModeLongestShutter     , // 5
+    tlModeSleepBetweenShots  , // 6
+    tlModeLCD                , // 7
+    tlModeEasingCurve        , // 8
+    tlModeTimeEasingFunction , // 9
+    tlModeTimeEasingCurve    , // 10
+    tlModeDirectionLineOne   , // 11
+    tlModeDirectionLineTwoME , // 12
+    tlModeDirectionLineTwoEM , // 13
+    tlModeRunningTl          , // 14
+    tlModeCompleted          , // 15
+};
 
 /* }}} */
 /* Commander Menu Strings {{{ */
 
-char enteringCommandModeLineOne[17] = ">>> Commander   ";
-char commandModeLineOne[17] = "  Command Mode  ";
-char commandModeLineTwoMotorToEnd[17] = "Motor <----> End";
-char commandModeLineTwoEndToMotor[17] = "End <----> Motor";
-char commandModeLineTwoChangingDirection[17] = "Reversing Dir <>";
+const char enteringCommandModeLineOne[17] PROGMEM = ">>> Commander   ";
+const char cmdModeLineOne[17] PROGMEM             = "  Command Mode  ";
+const char cmdModeLineTwoMotorToEnd[17] PROGMEM   = "Motor <----> End";
+const char cmdModeLineTwoEndToMotor[17] PROGMEM   = "End <----> Motor";
+const char cmdModeLineTwoChangeDir[17] PROGMEM    = "Reversing Dir <>";
+const char* cmdPointers[] PROGMEM = {
+    enteringCommandModeLineOne,
+    cmdModeLineOne,
+    cmdModeLineTwoMotorToEnd,
+    cmdModeLineTwoEndToMotor,
+    cmdModeLineTwoChangeDir
+};
 
 /* }}} */
 /* Direction Menu Strings ---------------------------------------- {{{ */
 
-char enteringDirectionModeLineOne[17] = ">>> Direction   ";
-char directionModeLineOne[17] = "Set EEPROM Dir: ";
+const char enteringDirectionModeLineOne[17] PROGMEM = ">>> Direction   ";
+const char directionModeLineOne[17] PROGMEM = "Set EEPROM Dir: ";
+const char *dirPointers[] PROGMEM = {
+    enteringDirectionModeLineOne,
+    directionModeLineOne
+};
 
 /* }}} */
 /* Status Menu Strings {{{ */
 
-char enteringDebugModeLineOne[17] = ">>> Debug Mode  ";
+const char enteringDebugModeLineOne[17] PROGMEM = ">>> Debug Mode  ";
+// Keep these as variables
 char debugLineOne[17] = "";
 char debugLineTwo[17] = "";
 char switchOpen[2] = "O";
 char switchPressed[2] = "P";
 char switchError[2] = "X";
 
+const char *statusPointers[] PROGMEM = {
+    enteringDebugModeLineOne,
+};
+
 /* }}} */
 /* Error Strings {{{ */
 
-char genericErrorLineOne[17] = ">>> ERROR       ";
-char genericErrorLineTwo[17] = "Returning Home  ";
+/* char genericErrorLineOne[17] = ">>> ERROR       "; */
+/* char genericErrorLineTwo[17] = "Returning Home  "; */
+const char genericErrorLineOne[17] PROGMEM = ">>> ERROR       ";
+const char genericErrorLineTwo[17] PROGMEM = "Returning Home  ";
+
+const char *errorPointers[] PROGMEM = {
+    genericErrorLineOne,
+    genericErrorLineTwo
+};
 
 /* }}} */
 /* Realtime Menu Strings ---------------------------------------- {{{ */
 
-char enteringRealtimeModeLineOne[17] = ">>>Realtime Mode";
-char realtimeModeMinSpeedLineOne[17] = "Move Min Speed: ";
-char realtimeModeMaxSpeedLineOne[17] = "Move Max Speed: ";
-char realtimeModeEasingCurveLineOne[17] = "RT Ease Curve:  ";
-char realtimeModeCompletedLineOne[17] = "Move Complete!  ";
+const char enteringRealtimeModeLineOne[17] PROGMEM = ">>>Realtime Mode";
+const char realtimeModeMinSpeedLineOne[17] PROGMEM = "Move Min Speed: ";
+const char realtimeModeMaxSpeedLineOne[17] PROGMEM = "Move Max Speed: ";
+const char realtimeModeEasingCurveLineOne[17] PROGMEM = "RT Ease Curve:  ";
+const char realtimeModeCompletedLineOne[17] PROGMEM = "Move Complete!  ";
+
+const char *realtimePointers[] PROGMEM = {
+    enteringRealtimeModeLineOne,
+    realtimeModeMinSpeedLineOne,
+    realtimeModeMaxSpeedLineOne,
+    realtimeModeEasingCurveLineOne,
+    realtimeModeCompletedLineOne
+};
 
 /* }}} */
 
@@ -370,7 +442,8 @@ void findTrackLen(){
 /* commanderMode {{{ */
 void commanderMode(){
     byte currentSpeed = 20;
-    lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
+    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
+    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
     int direction = 1; // Odd is motor to end, Even is end to motor
     if (EEPROM_DIRECTION == 2){
         direction += 1;
@@ -385,32 +458,39 @@ void commanderMode(){
                 direction += 1;
                 //Reprint lcd
                 if (direction % 2 == 1){
-                    lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection);
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 4);
                     delay(1000);
-                    lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
                 } else if (direction % 2 == 0){
-                    lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection);
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 4);
                     delay(1000);
-                    lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor);
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 3);
                 }
             }
         }
         if (ypos == 1023){
-            delay(300);
+            delay(400);
             if (analogRead(JOYSTICK_Y_PIN) == 1023){ // Joystick Up
                 // Increase Speed
                 currentSpeed += 10;
                 //Reprint lcd
                 currentSpeed = reflow(currentSpeed, 1, 100);
                 sprintf(utilityString, "Speed: %02d       ", currentSpeed);
-                lcdPrint(commandModeLineOne, utilityString);
+                /* lcdPrint(commandModeLineOne, utilityString); */
+                constProgmemFirstLineLcdPrint(cmdPointers, 1, utilityString);
             } else {
                 if (direction % 2 == 1){
-                    delay(1000);
-                    lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd);
+                    /* delay(1000); */
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
                 } else if (direction % 2 == 0){
-                    delay(1000);
-                    lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor);
+                    /* delay(1000); */
+                    /* lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor); */
+                    constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 3);
                 }
             }
         }
@@ -565,23 +645,27 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             numShots += incrementVar(input, counter);
             numShots = reflow(numShots, minShots, maxShots);
             sprintf(utilityString, "%04d            ", numShots);
-            lcdPrint(timelapseModeNumShotsLineOne, utilityString);
+            /* lcdPrint(timelapseModeNumShots, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, 1, utilityString);
             break;
         case 2: //Duration
             currentTime += incrementVar(input, counter) * 60;
             currentTime = reflow(currentTime, minTime, maxTime);
             sprintf(utilityString, "%04u minutes   ", currentTime / 60);
-            lcdPrint(timelapseModeDurationLineOne, utilityString);
+            /* lcdPrint(timelapseModeDuration, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 3: // Show Interval
             sprintf(utilityString, "%04d seconds    ", currentTime / numShots);
-            lcdPrint(timelapseModeIntervalLineOne, utilityString);
+            /* lcdPrint(timelapseModeInterval, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 4: //Longest Shutter
             maxShutter += incrementVar(input, counter) * 1000;
             maxShutter = reflow(maxShutter, minMaxShutter, maxMaxShutter);
             sprintf(utilityString, "%02u seconds   ", maxShutter / 1000);
-            lcdPrint(timelapseModeLongestShutterLineOne, utilityString);
+            /* lcdPrint(timelapseModeLongestShutter, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 5: // Start Delay
             if (currentDelay < 60){
@@ -596,39 +680,46 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             } else {
                 sprintf(utilityString, "%d minutes   ", currentDelay / 60);
             }
-            lcdPrint(timelapseModeDelayLineOne, utilityString);
+            /* lcdPrint(timelapseModeDelay, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 6: // Sleep between shots
             sleep += incrementVar(input, 0);
             sleep = reflow(sleep, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(sleep));
-            lcdPrint(timelapseModeSleepBetweenShotsLineOne, utilityString);
+            /* lcdPrint(timelapseModeSleepBetweenShots, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 7: // LCD on / off
             LCDOn += incrementVar(input, 0);
             LCDOn = reflow(LCDOn, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(LCDOn));
-            lcdPrint(timelapseModeLCDLineOne, utilityString);
+            /* lcdPrint(timelapseModeLCD, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 8: //Easing Curve
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(easingCurve));
-            lcdPrint(timelapseModeEasingCurveLineOne, utilityString);
+            /* lcdPrint(timelapseModeEasingCurve, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 9: //Time Easing Curve
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
-            lcdPrint(timelapseModeTimeEasingCurveLineOne, utilityString);
+            /* lcdPrint(timelapseModeTimeEasingCurve, utilityString); */
+            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 10://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
-                lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME);
+                /* lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
+                constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 12);
             } else {
-                lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
+                /* lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
+                constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 13);
             }
             break;
         case 11: //
@@ -699,7 +790,8 @@ const char* yesOrNo(byte input){
 void startTimelapse(){
     timelapse(timelapseDirection, numShots, currentTime);
     timelapseMenuLocation = 1;
-    lcdPrint(timelapseModeCompletedLineOne, holdSelToExit);
+    /* lcdPrint(timelapseModeCompleted, holdSelToExit); */
+    constProgmemLcdPrint(tlStringPointers, 15, selPointer, 0);
     return;
 }
 
@@ -707,6 +799,9 @@ void startTimelapse(){
 /* timelapse -------------------------------------------------- {{{ */
 
 void timelapse(byte dir, int shots, unsigned long instanceTime){
+#ifdef DEBUG_ON
+    printMemory();
+#endif
     instanceTime = instanceTime * 1000; // Convert from seconds to milliseconds.
     unsigned long shotDelay = instanceTime / shots;
 
@@ -725,6 +820,9 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 
     // Starting Loop
     for (int i = 1; i <= shots; i++){
+#ifdef DEBUG_ON
+    printMemory();
+#endif
         int revI = shots - i;
         stepInterval = baseStepInterval;
         stepStart = millis();
@@ -803,7 +901,8 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 
 void showTimelapseProgress(unsigned long currentShot, int totalShots){
     sprintf(utilityString, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
-    lcdPrint(timelapseModeRunningTimelapseLineOne, utilityString);
+    /* lcdPrint(timelapseModeRunningTimelapse, utilityString); */
+    constProgmemFirstLineLcdPrint(tlStringPointers, 14, utilityString);
 }
 
 /* }}} */
@@ -868,7 +967,8 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             realtimeCurrentMinSpeed += incrementVar(input, counter);
             realtimeCurrentMinSpeed = reflow(realtimeCurrentMinSpeed, realtimeMinMinSpeed, realtimeMinMaxSpeed);
             sprintf(utilityString, "%02d              ", realtimeCurrentMinSpeed);
-            lcdPrint(realtimeModeMinSpeedLineOne, utilityString);
+            /* lcdPrint(realtimeModeMinSpeedLineOne, utilityString); */
+            constProgmemFirstLineLcdPrint(realtimePointers, 1, utilityString);
             break;
         case 2: //Speed
             if (realtimeCurrentMaxSpeed < realtimeCurrentMinSpeed) {
@@ -877,23 +977,32 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             realtimeCurrentMaxSpeed += incrementVar(input, counter);
             realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeCurrentMinSpeed + 1, realtimeMaxMaxSpeed);
             sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
-            lcdPrint(realtimeModeMaxSpeedLineOne, utilityString);
+            /* lcdPrint(realtimeModeMaxSpeedLineOne, utilityString); */
+            constProgmemFirstLineLcdPrint(realtimePointers, 2, utilityString);
             break;
         case 3: //Easing Curve
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
-            lcdPrint(realtimeModeEasingCurveLineOne, utilityString);
+            /* lcdPrint(realtimeModeEasingCurveLineOne, utilityString); */
+            constProgmemFirstLineLcdPrint(realtimePointers, 3, utilityString);
             break;
         case 4://Direction
             realtimeDirection += incrementVar(input, 0);
             realtimeDirection = reflow(realtimeDirection, 1, 2);
             if (realtimeDirection == 1){
-                lcd.clear();
-                lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME);
+                /* lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
+                constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 12);
             } else {
-                lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM);
+                /* lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
+                constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 13);
             }
+            /* if (realtimeDirection == 1){ */
+            /*     lcd.clear(); */
+            /*     lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
+            /* } else { */
+            /*     lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
+            /* } */
             break;
         case 5: //
             lcdPrint("Move Right to   ", "start RT move  >");
@@ -910,7 +1019,8 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
 void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
     realtimeMenuLocation = 1;
-    lcdPrint(realtimeModeCompletedLineOne, holdSelToExit);
+    /* lcdPrint(realtimeModeCompletedLineOne, holdSelToExit); */
+    constProgmemLcdPrint(realtimePointers, 4, selPointer, 0);
 
 }
 
@@ -1079,7 +1189,8 @@ void directionChanger(){
     byte instanceEEDir = EEPROM_DIRECTION;
     // Print Current Status
     sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-    lcdPrint(directionModeLineOne, utilityString);
+    /* lcdPrint(directionModeLineOne, utilityString); */
+    constProgmemFirstLineLcdPrint(dirPointers, 1, utilityString);
 
     while(selectTrigger(1000)){
         if (yHigh() || yLow()){
@@ -1093,7 +1204,8 @@ void directionChanger(){
                 instanceEEDir = reflow(instanceEEDir, 1, 2);
             }
             sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-            lcdPrint(directionModeLineOne, utilityString);
+            /* lcdPrint(directionModeLineOne, utilityString); */
+            constProgmemFirstLineLcdPrint(dirPointers, 1, utilityString);
         }
     }
     if (instanceEEDir != EEPROM_DIRECTION){
@@ -1229,6 +1341,14 @@ void joystickPosition(int buttonDelay){
 }
 
 /* }}} */
+/* PROGMEM -------------------------------------------------- {{{ */
+
+char strBuffer[17];
+void convertArrayString(const char** strArray, byte position){
+    strcpy_P(strBuffer, (char*)pgm_read_word(&(strArray[position])));
+}
+
+/* }}} */
 /* lcd Print {{{ */
 void lcdPrint(char* line1, char* line2){
     //Prints two 16 char lines to the lcd
@@ -1242,8 +1362,43 @@ void lcdPrint(char* line1, char* line2){
     lcd.print(line2);
 }
 /* }}} */
+/* constProgmemLcdPrint --------------------------------------- {{{ */
+
+void constProgmemLcdPrint(const char** strArray1, byte pos1, const char** strArray2, byte pos2){
+    lcd.setCursor(0, 0);
+    convertArrayString(strArray1, pos1);
+    lcd.print(strBuffer);
+
+    lcd.setCursor(0,1);
+    convertArrayString(strArray2, pos2);
+    lcd.print(strBuffer);
+}
+
+/* }}} */
+/* constProgmemFirstLineLcdPrint --------------------------------- {{{ */
+
+void constProgmemFirstLineLcdPrint(const char** strArray, byte pos, char* line2){
+    lcd.setCursor(0, 0);
+    convertArrayString(strArray, pos);
+    lcd.print(strBuffer);
+
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+}
+
+/* }}} */
 /* constLcdPrint {{{ */
 void constLcdPrint(const char* line1, const char* line2){
+
+    /* Line 1 */
+    lcd.setCursor(0, 0); //Cursor Position, Line Number
+    lcd.print(line1);
+
+    /* Line 2 */
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+}
+void constFirstLcdPrint(const char* line1, char* line2){
     //Prints two 16 char lines to the lcd
 
     /* Line 1 */
@@ -1285,19 +1440,25 @@ byte minMenuPosition = 1;
 byte maxMenuPosition = 5;
 
 void menuShow(){
-    constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
+    constProgmemLcdPrint(mainMenuStringPointers, 0, mainMenuStringPointers, currentMenuPosition);
+#ifdef DEBUG_ON
+    printMemory();
+#endif
     while (directionTrigger(50, RIGHT) == true){
         int currentJoystickPosition = readJoystick(50);
         if (currentJoystickPosition == UP){
             currentMenuPosition -= 1;
             currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition);
-            constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
+            constProgmemLcdPrint(mainMenuStringPointers, 0, mainMenuStringPointers, currentMenuPosition);
         } else if (currentJoystickPosition == DOWN) {
             currentMenuPosition += 1;
             currentMenuPosition = reflow(currentMenuPosition, minMenuPosition, maxMenuPosition);
-            constLcdPrint(selectModeString, menuOptions(currentMenuPosition));
+            constProgmemLcdPrint(mainMenuStringPointers, 0, mainMenuStringPointers, currentMenuPosition);
         }
     }
+#ifdef DEBUG_ON
+    printMemory();
+#endif
     secondaryMenuShow(currentMenuPosition);
     return;
 }
@@ -1319,32 +1480,38 @@ void secondaryMenuShow(int input){
     int flashDelay = 250;
     switch(input){
         case 1: // Timelapse
-            lcdPrint(enteringTimelapseModeLineOne, holdSelToExit);
+            /* constFirstLcdPrint(enteringTimelapseMode, holdSelToExit); */
+            constProgmemLcdPrint(tlStringPointers, 0, selPointer, 0);
             delay(flashDelay);
             configureTimelapse();
             break;
         case 2: // Realtime
-            lcdPrint(enteringRealtimeModeLineOne, holdSelToExit);
+            /* lcdPrint(enteringRealtimeModeLineOne, holdSelToExit); */
+            constProgmemLcdPrint(realtimePointers, 0, selPointer, 0);
             delay(flashDelay);
             configureRealtime();
             break;
         case 3: // Command
-            lcdPrint(enteringCommandModeLineOne, holdSelToExit);
+            /* lcdPrint(enteringCommandModeLineOne, holdSelToExit); */
+            constProgmemLcdPrint(cmdPointers, 0, selPointer, 0);
             delay(flashDelay);
             commanderMode();
             break;
         case 4: // Direction
-            lcdPrint(enteringDirectionModeLineOne, holdSelToExit);
+            /* lcdPrint(enteringDirectionModeLineOne, holdSelToExit); */
+            constProgmemLcdPrint(dirPointers, 0, selPointer, 0);
             delay(flashDelay);
             directionChanger();
             break;
         case 5: // Debug
-            lcdPrint(enteringDebugModeLineOne, holdSelToExit);
+            /* lcdPrint(enteringDebugModeLineOne, holdSelToExit); */
+            constProgmemLcdPrint(statusPointers, 0, selPointer, 0);
             delay(flashDelay);
             status();
             break;
         default:
-            lcdPrint(genericErrorLineOne, genericErrorLineTwo);
+            /* lcdPrint(genericErrorLineOne, genericErrorLineTwo); */
+            constProgmemLcdPrint(errorPointers, 0, errorPointers, 1);
             delay(flashDelay);
             menuShow();
             break;
@@ -1356,6 +1523,13 @@ void secondaryMenuShow(int input){
 /* }}} */
 /* Helper Functions ------------------------------------------------ {{{ */
 
+#ifdef DEBUG_ON
+void printMemory(){
+    Serial.print(F("Free Memory: "));
+    Serial.print(freeMemory());
+    Serial.print(F(" bytes.\r\n"));
+}
+#endif
 
 /* }}} */
 /* Setup {{{ */
@@ -1369,17 +1543,19 @@ void setup()
     digitalWrite(SLEEP_PIN, HIGH);
 
     /* Serial */
-    /* Serial.begin(9600); */
-    /* Serial.print("Beginning Serial!"); */
+#ifdef DEBUG_ON
+    Serial.begin(9600);
+    Serial.print(F("Beginning Serial!\r\n"));
+#endif
 
     /* Camera Pin Setup */
     pinMode(SHUTTER_PIN, OUTPUT);
 
     /* LCD Pin Setup */
     lcd.begin(16, 2);
-    lcd.print("   Slidelapse");
+    lcd.print(F("   Slidelapse"));
     lcd.setCursor(0, 1);
-    lcd.print(" Version 0.8.0");
+    lcd.print(F(" Version 0.8.0"));
     delay(1500);
     lcd.clear();
 
@@ -1393,6 +1569,11 @@ void setup()
     /* Switch Pin Setup */
     pinMode(MOTOR_SWITCH_PIN, INPUT);
     pinMode(END_SWITCH_PIN, INPUT);
+
+    /* Testing Memory */
+#ifdef DEBUG_ON
+    printMemory();
+#endif
 
     sleepOff();
 }
