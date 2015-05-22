@@ -442,7 +442,6 @@ void findTrackLen(){
 /* commanderMode {{{ */
 void commanderMode(){
     byte currentSpeed = 20;
-    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
     int direction = 1; // Odd is motor to end, Even is end to motor
     if (EEPROM_DIRECTION == 2){
@@ -458,16 +457,12 @@ void commanderMode(){
                 direction += 1;
                 //Reprint lcd
                 if (direction % 2 == 1){
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 4);
                     delay(1000);
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
                 } else if (direction % 2 == 0){
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoChangingDirection); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 4);
                     delay(1000);
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 3);
                 }
             }
@@ -480,16 +475,13 @@ void commanderMode(){
                 //Reprint lcd
                 currentSpeed = reflow(currentSpeed, 1, 100);
                 sprintf(utilityString, "Speed: %02d       ", currentSpeed);
-                /* lcdPrint(commandModeLineOne, utilityString); */
                 constProgmemFirstLineLcdPrint(cmdPointers, 1, utilityString);
             } else {
                 if (direction % 2 == 1){
                     /* delay(1000); */
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoMotorToEnd); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 2);
                 } else if (direction % 2 == 0){
                     /* delay(1000); */
-                    /* lcdPrint(commandModeLineOne, commandModeLineTwoEndToMotor); */
                     constProgmemLcdPrint(cmdPointers, 1, cmdPointers, 3);
                 }
             }
@@ -645,26 +637,22 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             numShots += incrementVar(input, counter);
             numShots = reflow(numShots, minShots, maxShots);
             sprintf(utilityString, "%04d            ", numShots);
-            /* lcdPrint(timelapseModeNumShots, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, 1, utilityString);
             break;
         case 2: //Duration
             currentTime += incrementVar(input, counter) * 60;
             currentTime = reflow(currentTime, minTime, maxTime);
             sprintf(utilityString, "%04u minutes   ", currentTime / 60);
-            /* lcdPrint(timelapseModeDuration, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 3: // Show Interval
             sprintf(utilityString, "%04d seconds    ", currentTime / numShots);
-            /* lcdPrint(timelapseModeInterval, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 4: //Longest Shutter
             maxShutter += incrementVar(input, counter) * 1000;
             maxShutter = reflow(maxShutter, minMaxShutter, maxMaxShutter);
             sprintf(utilityString, "%02u seconds   ", maxShutter / 1000);
-            /* lcdPrint(timelapseModeLongestShutter, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 5: // Start Delay
@@ -680,45 +668,38 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             } else {
                 sprintf(utilityString, "%d minutes   ", currentDelay / 60);
             }
-            /* lcdPrint(timelapseModeDelay, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 6: // Sleep between shots
             sleep += incrementVar(input, 0);
             sleep = reflow(sleep, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(sleep));
-            /* lcdPrint(timelapseModeSleepBetweenShots, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 7: // LCD on / off
             LCDOn += incrementVar(input, 0);
             LCDOn = reflow(LCDOn, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(LCDOn));
-            /* lcdPrint(timelapseModeLCD, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 8: //Easing Curve
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(easingCurve));
-            /* lcdPrint(timelapseModeEasingCurve, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 9: //Time Easing Curve
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
-            /* lcdPrint(timelapseModeTimeEasingCurve, utilityString); */
             constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
             break;
         case 10://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
-                /* lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
                 constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 12);
             } else {
-                /* lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
                 constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 13);
             }
             break;
@@ -790,7 +771,6 @@ const char* yesOrNo(byte input){
 void startTimelapse(){
     timelapse(timelapseDirection, numShots, currentTime);
     timelapseMenuLocation = 1;
-    /* lcdPrint(timelapseModeCompleted, holdSelToExit); */
     constProgmemLcdPrint(tlStringPointers, 15, selPointer, 0);
     return;
 }
@@ -901,7 +881,6 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 
 void showTimelapseProgress(unsigned long currentShot, int totalShots){
     sprintf(utilityString, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
-    /* lcdPrint(timelapseModeRunningTimelapse, utilityString); */
     constProgmemFirstLineLcdPrint(tlStringPointers, 14, utilityString);
 }
 
@@ -967,7 +946,6 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             realtimeCurrentMinSpeed += incrementVar(input, counter);
             realtimeCurrentMinSpeed = reflow(realtimeCurrentMinSpeed, realtimeMinMinSpeed, realtimeMinMaxSpeed);
             sprintf(utilityString, "%02d              ", realtimeCurrentMinSpeed);
-            /* lcdPrint(realtimeModeMinSpeedLineOne, utilityString); */
             constProgmemFirstLineLcdPrint(realtimePointers, 1, utilityString);
             break;
         case 2: //Speed
@@ -977,24 +955,20 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
             realtimeCurrentMaxSpeed += incrementVar(input, counter);
             realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeCurrentMinSpeed + 1, realtimeMaxMaxSpeed);
             sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
-            /* lcdPrint(realtimeModeMaxSpeedLineOne, utilityString); */
             constProgmemFirstLineLcdPrint(realtimePointers, 2, utilityString);
             break;
         case 3: //Easing Curve
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
-            /* lcdPrint(realtimeModeEasingCurveLineOne, utilityString); */
             constProgmemFirstLineLcdPrint(realtimePointers, 3, utilityString);
             break;
         case 4://Direction
             realtimeDirection += incrementVar(input, 0);
             realtimeDirection = reflow(realtimeDirection, 1, 2);
             if (realtimeDirection == 1){
-                /* lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
                 constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 12);
             } else {
-                /* lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
                 constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 13);
             }
             /* if (realtimeDirection == 1){ */
@@ -1019,7 +993,6 @@ void incrementRealtimeMenu(int input, int currentMenu, int counter){
 void startRealtime(){
     realtime(realtimeDirection, realtimeNumShots);
     realtimeMenuLocation = 1;
-    /* lcdPrint(realtimeModeCompletedLineOne, holdSelToExit); */
     constProgmemLcdPrint(realtimePointers, 4, selPointer, 0);
 
 }
@@ -1189,7 +1162,6 @@ void directionChanger(){
     byte instanceEEDir = EEPROM_DIRECTION;
     // Print Current Status
     sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-    /* lcdPrint(directionModeLineOne, utilityString); */
     constProgmemFirstLineLcdPrint(dirPointers, 1, utilityString);
 
     while(selectTrigger(1000)){
@@ -1204,7 +1176,6 @@ void directionChanger(){
                 instanceEEDir = reflow(instanceEEDir, 1, 2);
             }
             sprintf(utilityString, "%s %s  ", directionSettings(instanceEEDir), directionSelected(instanceEEDir));
-            /* lcdPrint(directionModeLineOne, utilityString); */
             constProgmemFirstLineLcdPrint(dirPointers, 1, utilityString);
         }
     }
@@ -1486,31 +1457,26 @@ void secondaryMenuShow(int input){
             configureTimelapse();
             break;
         case 2: // Realtime
-            /* lcdPrint(enteringRealtimeModeLineOne, holdSelToExit); */
             constProgmemLcdPrint(realtimePointers, 0, selPointer, 0);
             delay(flashDelay);
             configureRealtime();
             break;
         case 3: // Command
-            /* lcdPrint(enteringCommandModeLineOne, holdSelToExit); */
             constProgmemLcdPrint(cmdPointers, 0, selPointer, 0);
             delay(flashDelay);
             commanderMode();
             break;
         case 4: // Direction
-            /* lcdPrint(enteringDirectionModeLineOne, holdSelToExit); */
             constProgmemLcdPrint(dirPointers, 0, selPointer, 0);
             delay(flashDelay);
             directionChanger();
             break;
         case 5: // Debug
-            /* lcdPrint(enteringDebugModeLineOne, holdSelToExit); */
             constProgmemLcdPrint(statusPointers, 0, selPointer, 0);
             delay(flashDelay);
             status();
             break;
         default:
-            /* lcdPrint(genericErrorLineOne, genericErrorLineTwo); */
             constProgmemLcdPrint(errorPointers, 0, errorPointers, 1);
             delay(flashDelay);
             menuShow();
