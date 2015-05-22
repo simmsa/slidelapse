@@ -102,7 +102,7 @@ const char tlModeSleepBetweenShots[17] PROGMEM  = "Sleep btw shots:";
 const char tlModeLCD[17] PROGMEM                = "Backlight on?:  ";
 const char tlModeEasingCurve[17] PROGMEM        = "Slide Ease Curv:";
 const char tlModeTimeEasingFunction[17] PROGMEM = "Time Ease Func: ";
-const char tlModeTimeEasingCurve[17] PROGMEM    = "Time Curve Func:";
+const char tlModeTimeEasingCurve[17] PROGMEM    = "Time Ease Curve:";
 const char tlModeDirectionLineOne[17] PROGMEM   = "Movement Dir:   ";
 const char tlModeDirectionLineTwoME[17] PROGMEM = "Motor -----> End";
 const char tlModeDirectionLineTwoEM[17] PROGMEM = "End -----> Motor";
@@ -118,13 +118,12 @@ const char* tlStringPointers[] PROGMEM = {
     tlModeSleepBetweenShots  , // 6
     tlModeLCD                , // 7
     tlModeEasingCurve        , // 8
-    tlModeTimeEasingFunction , // 9
-    tlModeTimeEasingCurve    , // 10
-    tlModeDirectionLineOne   , // 11
-    tlModeDirectionLineTwoME , // 12
-    tlModeDirectionLineTwoEM , // 13
-    tlModeRunningTl          , // 14
-    tlModeCompleted          , // 15
+    tlModeTimeEasingCurve    , // 9
+    tlModeDirectionLineOne   , // 10
+    tlModeDirectionLineTwoME , // 11
+    tlModeDirectionLineTwoEM , // 12
+    tlModeRunningTl          , // 13
+    tlModeCompleted          , // 14
 };
 
 /* }}} */
@@ -643,17 +642,17 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             currentTime += incrementVar(input, counter) * 60;
             currentTime = reflow(currentTime, minTime, maxTime);
             sprintf(utilityString, "%04u minutes   ", currentTime / 60);
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 2, utilityString);
             break;
         case 3: // Show Interval
             sprintf(utilityString, "%04d seconds    ", currentTime / numShots);
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 3, utilityString);
             break;
         case 4: //Longest Shutter
             maxShutter += incrementVar(input, counter) * 1000;
             maxShutter = reflow(maxShutter, minMaxShutter, maxMaxShutter);
             sprintf(utilityString, "%02u seconds   ", maxShutter / 1000);
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 5, utilityString);
             break;
         case 5: // Start Delay
             if (currentDelay < 60){
@@ -668,39 +667,39 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             } else {
                 sprintf(utilityString, "%d minutes   ", currentDelay / 60);
             }
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 4, utilityString);
             break;
         case 6: // Sleep between shots
             sleep += incrementVar(input, 0);
             sleep = reflow(sleep, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(sleep));
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 6, utilityString);
             break;
         case 7: // LCD on / off
             LCDOn += incrementVar(input, 0);
             LCDOn = reflow(LCDOn, 1, 2);
             sprintf(utilityString, "%s             ", yesOrNo(LCDOn));
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 7, utilityString);
             break;
         case 8: //Easing Curve
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(easingCurve));
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 8, utilityString);
             break;
         case 9: //Time Easing Curve
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
-            constProgmemFirstLineLcdPrint(tlStringPointers, currentMenu, utilityString);
+            constProgmemFirstLineLcdPrint(tlStringPointers, 9, utilityString);
             break;
         case 10://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
-                constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 12);
+                constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 11);
             } else {
-                constProgmemLcdPrint(tlStringPointers, currentMenu, tlStringPointers, 13);
+                constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 12);
             }
             break;
         case 11: //
