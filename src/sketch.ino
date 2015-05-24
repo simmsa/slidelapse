@@ -42,6 +42,12 @@ const byte END_SWITCH_PIN = 6;
 /* }}} */
 /* Global Variables {{{ */
 
+/* Booleans {{{*/
+
+const byte YES = 1;
+const byte NO = 0;
+
+/* }}} */
 /* Joystick Constants {{{ */
 
 const byte LEFT = 1;
@@ -103,6 +109,7 @@ const char tlModeLCD[17] PROGMEM                = "Backlight on?:  ";
 const char tlModeEasingCurve[17] PROGMEM        = "Slide Ease Curv:";
 const char tlModeTimeEasingFunction[17] PROGMEM = "Time Ease Func: ";
 const char tlModeTimeEasingCurve[17] PROGMEM    = "Time Ease Curve:";
+const char tlModeCustomEaseAmt[17] PROGMEM      = "Ease Cust Amt:  ";
 const char tlModeDirectionLineOne[17] PROGMEM   = "Movement Dir:   ";
 const char tlModeDirectionLineTwoME[17] PROGMEM = "Motor -----> End";
 const char tlModeDirectionLineTwoEM[17] PROGMEM = "End -----> Motor";
@@ -124,6 +131,7 @@ const char* tlStringPointers[] PROGMEM = {
     tlModeDirectionLineTwoEM , // 12
     tlModeRunningTl          , // 13
     tlModeCompleted          , // 14
+    tlModeCustomEaseAmt      , // 15
 };
 
 /* }}} */
@@ -270,9 +278,13 @@ int easeInStep(int currentStep, int totalSteps, unsigned long trackLen){
     return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
 }
 
+int customEaseInStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
+    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
+}
+
 double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
     double coefficient = -1 * (double(trackLen) / pow(double(totalSteps), exponent));
-    return coefficient * pow(currentStep - totalSteps, exponent) + trackLen;
+    return coefficient * pow(totalSteps - currentStep, exponent) + trackLen;
 }
 
 double reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent) {
@@ -280,11 +292,15 @@ double reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned
 }
 
 double preciseEaseOutStep(int currentStep, int totalSteps, unsigned long len){
-    return reverseCalculateCoefficient(currentStep, totalSteps, len, easeAmount);
+    return reverseCalculateCoefficientStep(currentStep, totalSteps, len, easeAmount);
 }
 
 int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
     return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
+}
+
+int customEaseOutStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
+    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
 }
 
 double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
@@ -310,12 +326,24 @@ int slowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen){
     return round(cubicBezierStep(currentStep, totalSteps, trackLen, 0.0, 1.0));
 }
 
+int customSlowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
+    double easeAdjust = 1.0 - customEasingFactor;
+    // I have no idea why this works
+    return round(cubicBezierStep(currentStep, totalSteps, trackLen, (0.0 + easeAdjust * 0.3333), 1.0 - easeAdjust * 0.3333));
+}
+
 double preciseFastSlowFastStep(int currentStep, int totalSteps, unsigned long len){
     return cubicBezierStep(currentStep, totalSteps, len, 1.0, 0.0);
 }
 
 int fastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen){
     return round(cubicBezierStep(currentStep, totalSteps, trackLen, 1.0, 0.0));
+}
+
+int customFastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
+    double easeAdjust = 1.0 - customEasingFactor;
+    // I have no idea why this works
+    return round(cubicBezierStep(currentStep, totalSteps, trackLen, (1.0 - easeAdjust * 0.3333), 0.0 + easeAdjust * 0.3333));
 }
 
 /* }}} */
@@ -567,7 +595,7 @@ bool yLow(){
 /* Timelapse Menu Global Variables -------------------------------- {{{ */
 
 byte timelapseMenuLocation = 1;
-byte timelapseMenuMax = 12;
+byte timelapseMenuMax = 13;
 byte timelapseMenuMin = 1;
 unsigned int trackLen = 34800;
 int numShots = 240;
@@ -579,18 +607,22 @@ unsigned int maxMaxShutter = 31000;
 unsigned long minDelay = 1; // Seconds
 unsigned long maxDelay = 3600; // Seconds
 unsigned long currentDelay = 10;
-byte sleep = 1;
-byte LCDOn = 1;
+byte sleep = YES;
+byte LCDOn = YES;
 byte speed = 25;
 long currentTime = 1500; //25 min
 long minTime = 60; // 1 min
 unsigned long maxTime = 86400; // 24hrs
+byte customizeCurve = NO;
 byte easingCurve = LINEAR;
 byte easingCurveMin = 1;
 byte easingCurveMax = 5;
 byte timingEasingCurve = LINEAR;
 byte timingEasingCurveMin = 1;
 byte timingEasingCurveMax = 5;
+double customEasingCurveAmt = 0.5;
+double customEasingCurveAmtMin = 0.01;
+double customEasingCurveAmtMax = 0.99;
 byte timelapseDirection = 2;
 int minInterval = 1000; // 1 sec
 
@@ -598,7 +630,7 @@ int minInterval = 1000; // 1 sec
 /* configureTimelapse {{{ */
 void configureTimelapse(){
     //Print current menu
-    incrementTimelapseMenu(0, timelapseMenuLocation, 0);
+    incrementTimelapseMenu(0, timelapseMenuLocation, 0, 0);
     int counter = 0;
     while(selectTrigger(1000)){
         int buttonDelay = 150;
@@ -607,19 +639,18 @@ void configureTimelapse(){
             counter += 1;
             if (xLow()){
                 timelapseMenuLocation = reflow(timelapseMenuLocation - 1, timelapseMenuMin, timelapseMenuMax);
-
-                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(0, timelapseMenuLocation, counter, -1);
             } else if (xHigh()){
                 timelapseMenuLocation = reflow(timelapseMenuLocation + 1, timelapseMenuMin, timelapseMenuMax);
-                incrementTimelapseMenu(0, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(0, timelapseMenuLocation, counter, 1);
             }
         } else if (yHigh() || yLow()){
             delay(buttonDelay);
             counter += 1;
             if (yLow()){
-                incrementTimelapseMenu(-1, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(-1, timelapseMenuLocation, counter, -1);
             } else if (yHigh()){
-                incrementTimelapseMenu(1, timelapseMenuLocation, counter);
+                incrementTimelapseMenu(1, timelapseMenuLocation, counter, 1);
             }
         } else {
             counter = 0;
@@ -630,7 +661,10 @@ void configureTimelapse(){
 }
 /* }}} */
 /* incrementTimelapseMenu {{{ */
-void incrementTimelapseMenu(int input, int currentMenu, int counter){
+// Dir:
+//   -1 = Left
+//   1 = Right
+void incrementTimelapseMenu(int input, int currentMenu, int counter, int dir){
     switch(currentMenu){
         case 1: //Num of Shots
             numShots += incrementVar(input, counter);
@@ -640,8 +674,8 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             break;
         case 2: //Duration
             currentTime += incrementVar(input, counter) * 60;
-            currentTime = reflow(currentTime, minTime, maxTime);
-            sprintf(utilityString, "%04u minutes   ", currentTime / 60);
+            currentTime = reflowUnsignedLong(currentTime, minTime, maxTime);
+            sprintf(utilityString, "%04lu minutes   ", currentTime / 60L);
             constProgmemFirstLineLcdPrint(tlStringPointers, 2, utilityString);
             break;
         case 3: // Show Interval
@@ -671,29 +705,49 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
             break;
         case 6: // Sleep between shots
             sleep += incrementVar(input, 0);
-            sleep = reflow(sleep, 1, 2);
+            sleep = reflow(sleep, NO, YES);
             sprintf(utilityString, "%s             ", yesOrNo(sleep));
             constProgmemFirstLineLcdPrint(tlStringPointers, 6, utilityString);
             break;
         case 7: // LCD on / off
             LCDOn += incrementVar(input, 0);
-            LCDOn = reflow(LCDOn, 1, 2);
+            LCDOn = reflow(LCDOn, NO, YES);
             sprintf(utilityString, "%s             ", yesOrNo(LCDOn));
             constProgmemFirstLineLcdPrint(tlStringPointers, 7, utilityString);
             break;
         case 8: //Easing Curve
+            EasingCurve:
             easingCurve -= incrementVar(input, 0);
             easingCurve = reflow(easingCurve, easingCurveMin, easingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(easingCurve));
             constProgmemFirstLineLcdPrint(tlStringPointers, 8, utilityString);
             break;
-        case 9: //Time Easing Curve
+        case 9:
+            if(easingCurve == LINEAR){
+                // Skip this section
+                if(dir > 0){
+                    timelapseMenuLocation++;
+                    goto TimeEasingCurve;
+                } else {
+                    timelapseMenuLocation--;
+                    goto EasingCurve;
+                }
+                return;
+            } else {
+                customEasingCurveAmt += incrementDoubleVar(input, counter);
+                customEasingCurveAmt = doubleReflow(customEasingCurveAmt, customEasingCurveAmtMin, customEasingCurveAmtMax);
+                sprintf(utilityString, "0.%02d            ", (int) round(customEasingCurveAmt * 100));
+                constProgmemFirstLineLcdPrint(tlStringPointers, 15, utilityString);
+                break;
+            }
+        case 10: //Time Easing Curve
+            TimeEasingCurve:
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
             constProgmemFirstLineLcdPrint(tlStringPointers, 9, utilityString);
             break;
-        case 10://Direction
+        case 11://Direction
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
@@ -702,10 +756,10 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter){
                 constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 12);
             }
             break;
-        case 11: //
+        case 12: //
             lcdPrint("Move Right to   ", "start timelapse>");
             break;
-        case 12:
+        case 13:
             lcdPrint("Starting TL...  ", "Sel to cancel   ");
             startTimelapse();
             break;
@@ -729,6 +783,23 @@ int incrementVar(int input, int counter){
     }
     return 0;
 }
+
+double incrementDoubleVar(int input, int counter){
+    if (input > 0){
+        if (counter > 10){
+            return 0.10;
+        } else {
+            return 0.01;
+        }
+    } else if (input < 0){
+        if (counter > 10){
+            return -0.10;
+        } else {
+            return -0.01;
+        }
+    }
+    return 0.0;
+}
 /* }}} */
 /* easingCurveName {{{ */
 const char* easingCurveName(byte input){
@@ -737,16 +808,16 @@ const char* easingCurveName(byte input){
             return "1. Linear       ";
             break;
         case 2:
-            return "2. Ease In      ";
+            return "2. Slow -> Fast ";
             break;
         case 3:
-            return "3. Ease Out     ";
+            return "3. Fast -> Slow ";
             break;
         case 4:
-            return "4. FastSlowFast ";
+            return "4.Fast>Slow>Fast";
             break;
         case 5:
-            return "5. SlowFastSlow ";
+            return "5.Slow>Fast>Slow";
             break;
     }
 }
@@ -755,10 +826,10 @@ const char* easingCurveName(byte input){
 
 const char* yesOrNo(byte input){
     switch(input){
-        case 1:
+        case YES:
             return "Yes";
             break;
-        case 2:
+        case NO:
             return "No ";
             break;
     }
@@ -770,7 +841,7 @@ const char* yesOrNo(byte input){
 void startTimelapse(){
     timelapse(timelapseDirection, numShots, currentTime);
     timelapseMenuLocation = 1;
-    constProgmemLcdPrint(tlStringPointers, 15, selPointer, 0);
+    constProgmemLcdPrint(tlStringPointers, 14, selPointer, 0);
     return;
 }
 
@@ -811,17 +882,27 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 
         /* Slider Easing ----------------------------------------- {{{ */
         switch(easingCurve){
+            /*
+               For ease in (Slow -> Fast) and ease out (Fast -> Slow)
+               the custom ease either steepens or smooth the curve
+               depending on whether the value is greater or less than
+               0.5, relatively.
+            */
             case EASEIN:
-                stepInterval = easeInStep(i, shots, trackLen);
+                stepInterval = customEaseInStep(i, shots, trackLen, 1 + customEasingCurveAmt);
                 break;
             case EASEOUT:
-                stepInterval = easeOutStep(i, shots, trackLen);
+                stepInterval = customEaseOutStep(i, shots, trackLen, 1 + customEasingCurveAmt);
                 break;
+            /*
+               For bezier curves the max curve is 0.99 and any value
+               less dampens the curve with a value of 0.01 being linear.
+            */
             case FASTSLOWFAST:
-                stepInterval = fastSlowFastStep(i, shots, trackLen);
+                stepInterval = customFastSlowFastStep(i, shots, trackLen, customEasingCurveAmt);
                 break;
             case SLOWFASTSLOW:
-                stepInterval = slowFastSlowStep(i, shots, trackLen);
+                stepInterval = customSlowFastSlowStep(i, shots, trackLen, customEasingCurveAmt);
                 break;
         }
         /* }}} */
@@ -1435,6 +1516,26 @@ void menuShow(){
 /* }}} */
 /* reflow {{{ */
 int reflow(int input, int minOutput, int maxOutput){
+    if (input > maxOutput){
+        return minOutput;
+    } else if (input < minOutput){
+        return maxOutput;
+    } else {
+        return input;
+    }
+}
+
+unsigned long reflowUnsignedLong(unsigned long input, unsigned long minOutput, unsigned long maxOutput){
+    if (input > maxOutput){
+        return minOutput;
+    } else if (input < minOutput){
+        return maxOutput;
+    } else {
+        return input;
+    }
+}
+
+double doubleReflow(double input, double minOutput, double maxOutput){
     if (input > maxOutput){
         return minOutput;
     } else if (input < minOutput){
