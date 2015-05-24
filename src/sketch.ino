@@ -107,14 +107,14 @@ const char tlModeLongestShutter[17] PROGMEM     = "Longest Shutter:";
 const char tlModeSleepBetweenShots[17] PROGMEM  = "Sleep btw shots:";
 const char tlModeLCD[17] PROGMEM                = "Backlight on?:  ";
 const char tlModeEasingCurve[17] PROGMEM        = "Slide Ease Curv:";
-const char tlModeTimeEasingFunction[17] PROGMEM = "Time Ease Func: ";
+const char tlModeCustomEaseAmt[17] PROGMEM      = "Slide Ease Amt: ";
 const char tlModeTimeEasingCurve[17] PROGMEM    = "Time Ease Curve:";
-const char tlModeCustomEaseAmt[17] PROGMEM      = "Ease Cust Amt:  ";
+const char tlModeTimeEasingAmt[17] PROGMEM      = "Time Ease Amt:  ";
 const char tlModeDirectionLineOne[17] PROGMEM   = "Movement Dir:   ";
 const char tlModeDirectionLineTwoME[17] PROGMEM = "Motor -----> End";
 const char tlModeDirectionLineTwoEM[17] PROGMEM = "End -----> Motor";
 const char tlModeRunningTl[17] PROGMEM          = "Timelapse active";
-const char tlModeCompleted[17] PROGMEM          = "Timelapse Done  ";
+const char tlModeCompleted[17] PROGMEM          = "Timelapse Done! ";
 const char* tlStringPointers[] PROGMEM = {
     enteringTlMode           , // 0
     tlModeNumShots           , // 1
@@ -132,6 +132,7 @@ const char* tlStringPointers[] PROGMEM = {
     tlModeRunningTl          , // 13
     tlModeCompleted          , // 14
     tlModeCustomEaseAmt      , // 15
+    tlModeTimeEasingAmt      , // 16
 };
 
 /* }}} */
@@ -282,6 +283,10 @@ int customEaseInStep(int currentStep, int totalSteps, unsigned long trackLen, do
     return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
 }
 
+long customLongEaseInStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
+    return lround(calculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
+}
+
 double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
     double coefficient = -1 * (double(trackLen) / pow(double(totalSteps), exponent));
     return coefficient * pow(totalSteps - currentStep, exponent) + trackLen;
@@ -301,6 +306,10 @@ int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
 
 int customEaseOutStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
     return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
+}
+
+long customLongEaseOutStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
+    return lround(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
 }
 
 double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
@@ -332,6 +341,12 @@ int customSlowFastSlowStep(int currentStep, int totalSteps, unsigned long trackL
     return round(cubicBezierStep(currentStep, totalSteps, trackLen, (0.0 + easeAdjust * 0.3333), 1.0 - easeAdjust * 0.3333));
 }
 
+long customLongSlowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
+    double easeAdjust = 1.0 - customEasingFactor;
+    // I have no idea why this works
+    return lround(cubicBezierStep(currentStep, totalSteps, trackLen, (0.0 + easeAdjust * 0.3333), 1.0 - easeAdjust * 0.3333));
+}
+
 double preciseFastSlowFastStep(int currentStep, int totalSteps, unsigned long len){
     return cubicBezierStep(currentStep, totalSteps, len, 1.0, 0.0);
 }
@@ -346,7 +361,13 @@ int customFastSlowFastStep(int currentStep, int totalSteps, unsigned long trackL
     return round(cubicBezierStep(currentStep, totalSteps, trackLen, (1.0 - easeAdjust * 0.3333), 0.0 + easeAdjust * 0.3333));
 }
 
-/* }}} */
+long customLongFastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
+    double easeAdjust = 1.0 - customEasingFactor;
+    // I have no idea why this works
+    return lround(cubicBezierStep(currentStep, totalSteps, trackLen, (1.0 - easeAdjust * 0.3333), 0.0 + easeAdjust * 0.3333));
+}
+
+/* }}} *
 /* Timelapse Functions {{{ */
 
 /* rotate {{{ */
@@ -595,7 +616,7 @@ bool yLow(){
 /* Timelapse Menu Global Variables -------------------------------- {{{ */
 
 byte timelapseMenuLocation = 1;
-byte timelapseMenuMax = 13;
+byte timelapseMenuMax = 14;
 byte timelapseMenuMin = 1;
 unsigned int trackLen = 34800;
 int numShots = 240;
@@ -623,6 +644,9 @@ byte timingEasingCurveMax = 5;
 double customEasingCurveAmt = 0.5;
 double customEasingCurveAmtMin = 0.01;
 double customEasingCurveAmtMax = 0.99;
+double customTimeEasingCurveAmt = 0.5;
+double customTimeEasingCurveAmtMin = 0.01;
+double customTimeEasingCurveAmtMax = 0.99;
 byte timelapseDirection = 2;
 int minInterval = 1000; // 1 sec
 
@@ -744,10 +768,29 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter, int dir){
             TimeEasingCurve:
             timingEasingCurve -= incrementVar(input, 0);
             timingEasingCurve = reflow(timingEasingCurve , timingEasingCurveMin, timingEasingCurveMax);
-            sprintf(utilityString, "%s    ", easingCurveName(timingEasingCurve));
+            sprintf(utilityString, "%s    ", timeEasingCurveName(timingEasingCurve));
             constProgmemFirstLineLcdPrint(tlStringPointers, 9, utilityString);
             break;
-        case 11://Direction
+        case 11:
+            if(timingEasingCurve == LINEAR){
+                // Skip this section
+                if(dir > 0){
+                    timelapseMenuLocation++;
+                    goto TimelapseDirection;
+                } else {
+                    timelapseMenuLocation--;
+                    goto TimeEasingCurve;
+                }
+                return;
+            } else {
+                customTimeEasingCurveAmt += incrementDoubleVar(input, counter);
+                customTimeEasingCurveAmt = doubleReflow(customTimeEasingCurveAmt, customTimeEasingCurveAmtMin, customTimeEasingCurveAmtMax);
+                sprintf(utilityString, "0.%02d            ", (int) round(customTimeEasingCurveAmt * 100));
+                constProgmemFirstLineLcdPrint(tlStringPointers, 16, utilityString);
+                break;
+            }
+        case 12://Direction
+            TimelapseDirection:
             timelapseDirection += incrementVar(input, 0);
             timelapseDirection = reflow(timelapseDirection, 1, 2);
             if (timelapseDirection == 1){
@@ -756,10 +799,10 @@ void incrementTimelapseMenu(int input, int currentMenu, int counter, int dir){
                 constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 12);
             }
             break;
-        case 12: //
+        case 13: //
             lcdPrint("Move Right to   ", "start timelapse>");
             break;
-        case 13:
+        case 14:
             lcdPrint("Starting TL...  ", "Sel to cancel   ");
             startTimelapse();
             break;
@@ -821,6 +864,26 @@ const char* easingCurveName(byte input){
             break;
     }
 }
+
+const char* timeEasingCurveName(byte input){
+    switch(input){
+        case 1:
+            return "1. Linear       ";
+            break;
+        case 2:
+            return "2. Long -> Short";
+            break;
+        case 3:
+            return "3. Short -> Long";
+            break;
+        case 4:
+            return "4.Long>Shrt>Long";
+            break;
+        case 5:
+            return "5.Shrt>Long>Shrt";
+            break;
+    }
+}
 /* }}} */
 /* yesOrNo -------------------------------------------------- {{{ */
 
@@ -853,7 +916,7 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
     printMemory();
 #endif
     instanceTime = instanceTime * 1000; // Convert from seconds to milliseconds.
-    unsigned long shotDelay = instanceTime / shots;
+    long shotDelay = (long)instanceTime / shots;
 
     unsigned long stepStart = 0;
     unsigned long stepLen = 0;
@@ -937,16 +1000,20 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         /* time easing ------------------------------------------ {{{ */
         switch(timingEasingCurve){
             case EASEIN:
-                shotDelay = easeInStep(i, shots, instanceTime);
+                /* shotDelay = easeInStep(i, shots, instanceTime); */
+                shotDelay = customLongEaseInStep(i, shots, instanceTime, 1 + customTimeEasingCurveAmt);
                 break;
             case EASEOUT:
-                shotDelay = easeOutStep(i, shots, instanceTime);
+                /* shotDelay = easeOutStep(i, shots, instanceTime); */
+                shotDelay = customLongEaseOutStep(i, shots, instanceTime, 1 + customTimeEasingCurveAmt);
                 break;
             case FASTSLOWFAST:
-                shotDelay = fastSlowFastStep(i, shots, instanceTime);
+                /* shotDelay = fastSlowFastStep(i, shots, instanceTime); */
+                shotDelay = customLongFastSlowFastStep(i, shots, instanceTime, customTimeEasingCurveAmt);
                 break;
             case SLOWFASTSLOW:
-                shotDelay = slowFastSlowStep(i, shots, instanceTime);
+                /* shotDelay = slowFastSlowStep(i, shots, instanceTime); */
+                shotDelay = customLongSlowFastSlowStep(i, shots, instanceTime, customTimeEasingCurveAmt);
                 break;
         }
         /* }}} */
