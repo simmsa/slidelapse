@@ -1,11 +1,12 @@
 /* Macros ----------------------------------------- {{{ */
 
-#define DEBUG_ON
+/* #define DEBUG_ON */
 
 /* }}} */
 /* Libraries {{{ */
 
 #include <math.h>
+#include <stdlib.h>
 
 #include <Wire.h>
 #include <LiquidCrystal.h>
@@ -115,7 +116,7 @@ const char tlModeDirectionLineTwoME[17] PROGMEM = "Motor -----> End";
 const char tlModeDirectionLineTwoEM[17] PROGMEM = "End -----> Motor";
 const char tlModeRunningTl[17] PROGMEM          = "Timelapse active";
 const char tlModeCompleted[17] PROGMEM          = "Timelapse Done! ";
-const char* tlStringPointers[] PROGMEM = {
+const char *tlStringPointers[] PROGMEM = {
     enteringTlMode           , // 0
     tlModeNumShots           , // 1
     tlModeDuration           , // 2
@@ -143,7 +144,7 @@ const char cmdModeLineOne[17] PROGMEM             = "  Command Mode  ";
 const char cmdModeLineTwoMotorToEnd[17] PROGMEM   = "Motor <----> End";
 const char cmdModeLineTwoEndToMotor[17] PROGMEM   = "End <----> Motor";
 const char cmdModeLineTwoChangeDir[17] PROGMEM    = "Reversing Dir <>";
-const char* cmdPointers[] PROGMEM = {
+const char *cmdPointers[] PROGMEM = {
     enteringCommandModeLineOne,
     cmdModeLineOne,
     cmdModeLineTwoMotorToEnd,
@@ -192,18 +193,20 @@ const char *errorPointers[] PROGMEM = {
 /* }}} */
 /* Realtime Menu Strings ---------------------------------------- {{{ */
 
-const char enteringRealtimeModeLineOne[17] PROGMEM = ">>>Realtime Mode";
-const char realtimeModeMinSpeedLineOne[17] PROGMEM = "Move Min Speed: ";
+const char enteringRealtimeModeLineOne[17] PROGMEM = ">>>Video Mode   ";
+const char realtimeModeMinSpeedLineOne[17] PROGMEM = "Move Seconds:   ";
 const char realtimeModeMaxSpeedLineOne[17] PROGMEM = "Move Max Speed: ";
-const char realtimeModeEasingCurveLineOne[17] PROGMEM = "RT Ease Curve:  ";
+const char realtimeModeEasingCurveLineOne[17] PROGMEM = "Vid Ease Curve: ";
+const char realtimeModeEasingCurveAmt[17] PROGMEM = "Vid Ease Amt:   ";
 const char realtimeModeCompletedLineOne[17] PROGMEM = "Move Complete!  ";
 
 const char *realtimePointers[] PROGMEM = {
-    enteringRealtimeModeLineOne,
-    realtimeModeMinSpeedLineOne,
-    realtimeModeMaxSpeedLineOne,
-    realtimeModeEasingCurveLineOne,
-    realtimeModeCompletedLineOne
+    enteringRealtimeModeLineOne,    // 0
+    realtimeModeMinSpeedLineOne,    // 1
+    realtimeModeMaxSpeedLineOne,    // 2
+    realtimeModeEasingCurveLineOne, // 3
+    realtimeModeCompletedLineOne,   // 4
+    realtimeModeEasingCurveAmt,     // 5
 };
 
 /* }}} */
@@ -258,62 +261,63 @@ byte readJoystick(int buttonDelay){
 /* }}} */
 
 /* }}} */
-/* Bezier Functions -------------------------------------------------- {{{ */
+/* Bezier Functions ------------------------------------------ {{{ */
 
-double easeAmount = 1.5;
-
-double calculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
-    double coefficient = trackLen / (pow(totalSteps, exponent));
-    return coefficient * (pow(currentStep, exponent));
+double bezierOneControlPoint(unsigned long currentStep, unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    double t = ((double) currentStep) / ((double) totalSteps);
+    double y2 = (double) maxValue;
+    // Linear ease factor = 0.5
+    // Ease Out ease factor 1 > x > 0.5
+    // Ease In ease factor 0.5 > x > 0.0
+    double cpY = (double)maxValue * easeFactor;
+    return (2 * cpY * (1 - t) * t) + (y2 * (t * t));
 }
 
-double calculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
-    return calculateCoefficient(currentStep, totalSteps, trackLen, exponent) - calculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent);
+double optimizedBezierOneControlPointCpyValue(unsigned long maxValue, double easeFactor){
+    return 2 * ((double) maxValue * easeFactor);
 }
 
-double preciseEaseInStep(int currentStep, int totalSteps, unsigned long len) {
-    return calculateCoefficient(currentStep, totalSteps, len, easeAmount);
+double optimizedBezierOneControlPoint(unsigned long currentStep, unsigned long totalSteps, unsigned long maxValue, unsigned long cpY1){
+    double t = ((double) currentStep) / ((double) totalSteps);
+    // Same as bezierOneControlPoint, but with precalculated
+    // values for speed.
+    return (cpY1 * (1 - t) * t) + (maxValue * (t * t));
 }
 
-int easeInStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
+unsigned int bezierOneControlPointStep(unsigned long currentStep, unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    return (unsigned int) round(bezierOneControlPoint(currentStep, totalSteps, maxValue, easeFactor) - bezierOneControlPoint(currentStep - 1, totalSteps, maxValue, easeFactor));
 }
 
-int customEaseInStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
-    return round(calculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
+struct easeData {
+    unsigned long totalSteps;
+    unsigned long maxValue;
+    unsigned long cpY1;
+    unsigned long cpY2;
+};
+
+struct easeData preCalcEaseInData(unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    struct easeData result;
+    result.totalSteps = totalSteps;
+    result.maxValue = maxValue;
+    result.cpY1 = (unsigned long) optimizedBezierOneControlPointCpyValue(maxValue, (0.5 - easeFactor / 2.0));
+    return result;
 }
 
-long customLongEaseInStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
-    return lround(calculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
+struct easeData preCalcEaseOutData(unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    struct easeData result;
+    result.totalSteps = totalSteps;
+    result.maxValue = maxValue;
+    result.cpY1 = (unsigned long) optimizedBezierOneControlPointCpyValue(maxValue, (0.5 + easeFactor / 2.0));
+    return result;
 }
 
-double reverseCalculateCoefficient(int currentStep, int totalSteps, unsigned long trackLen, double exponent){
-    double coefficient = -1 * (double(trackLen) / pow(double(totalSteps), exponent));
-    return coefficient * pow(totalSteps - currentStep, exponent) + trackLen;
+unsigned long easePos(unsigned long currentStep, struct easeData curve){
+    return (unsigned long) optimizedBezierOneControlPoint(currentStep, curve.totalSteps, curve.maxValue, curve.cpY1);
 }
 
-double reverseCalculateCoefficientStep(int currentStep, int totalSteps, unsigned long trackLen, double exponent) {
-    return reverseCalculateCoefficient(currentStep, totalSteps, trackLen, exponent) - reverseCalculateCoefficient(currentStep - 1, totalSteps, trackLen, exponent);
-}
-
-double preciseEaseOutStep(int currentStep, int totalSteps, unsigned long len){
-    return reverseCalculateCoefficientStep(currentStep, totalSteps, len, easeAmount);
-}
-
-int easeOutStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, easeAmount));
-}
-
-int customEaseOutStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
-    return round(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
-}
-
-long customLongEaseOutStep(int currentStep, int totalSteps, unsigned long trackLen, double customEaseAmount){
-    return lround(reverseCalculateCoefficientStep(currentStep, totalSteps, trackLen, customEaseAmount));
-}
-
-double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
-    double t = (totalSteps - currentStep) / double(totalSteps);
+double cubicBezier(unsigned long currentStep, unsigned long totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
+    /* double t = (totalSteps - currentStep) / double(totalSteps); */
+    double t = (double) currentStep / double(totalSteps);
     double b1 = t * t * t;
     double b2 = 3 * t * t * (1 - t);
     double b3 = 3 * t * (1 - t) * (1 - t);
@@ -323,51 +327,91 @@ double cubicBezier(int currentStep, int totalSteps, unsigned long trackLen, doub
     return 0 * b1 + controlPoint1 * b2 + controlPoint2 * b3 + double(trackLen) * b4;
 }
 
-double cubicBezierStep(int currentStep, int totalSteps, unsigned long trackLen, double control1Percent, double control2Percent){
-    return cubicBezier(currentStep, totalSteps, trackLen, control1Percent, control2Percent) - cubicBezier(currentStep - 1, totalSteps, trackLen, control1Percent, control2Percent);
+struct easeData preCalcFastSlowFast(unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    struct easeData result;
+    result.totalSteps = totalSteps;
+    result.maxValue = maxValue;
+    // p1 > p2
+    result.cpY1 = (1 - ((1 - easeFactor) * 0.6667)) * (double) maxValue;
+    result.cpY2 = ((1 - easeFactor) * 0.6667) * (double) maxValue;
+    return result;
 }
 
-double preciseSlowFastSlowStep(int currentStep, int totalSteps, unsigned long len){
-    return cubicBezierStep(currentStep, totalSteps, len, 0.0, 1.0);
+struct easeData preCalcSlowFastSlow(unsigned long totalSteps, unsigned long maxValue, double easeFactor){
+    struct easeData result;
+    result.totalSteps = totalSteps;
+    result.maxValue = maxValue;
+    // p2 > p1
+    result.cpY1 = ((1 - easeFactor) * 0.3333) * (double) maxValue;
+    result.cpY2 = (1 - ((1 - easeFactor) * 0.3333)) * (double) maxValue;
+    return result;
 }
 
-int slowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(cubicBezierStep(currentStep, totalSteps, trackLen, 0.0, 1.0));
+double optimizedCubicBezier(unsigned long currentStep, struct easeData curve){
+    double t = (double) currentStep / double(curve.totalSteps);
+    double b2 = 3 * t * (1 - t) * (1 - t);
+    double b3 = 3 * t * t * (1 - t);
+    double b4 = t * t * t;
+    return (curve.cpY1 * b2) + (curve.cpY2 * b3) + (curve.maxValue * b4);
 }
 
-int customSlowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
-    double easeAdjust = 1.0 - customEasingFactor;
-    // I have no idea why this works
-    return round(cubicBezierStep(currentStep, totalSteps, trackLen, (0.0 + easeAdjust * 0.3333), 1.0 - easeAdjust * 0.3333));
+unsigned long bezEasePos(unsigned long currentStep, struct easeData curve){
+    return (unsigned long) optimizedCubicBezier(currentStep, curve);
 }
 
-long customLongSlowFastSlowStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
-    double easeAdjust = 1.0 - customEasingFactor;
-    // I have no idea why this works
-    return lround(cubicBezierStep(currentStep, totalSteps, trackLen, (0.0 + easeAdjust * 0.3333), 1.0 - easeAdjust * 0.3333));
+struct easeData preCalcAllEaseData(unsigned long totalSteps, unsigned long maxValue, double easeAmount, byte easingCurve, byte timeEasing){
+    // To achieve the same effect with time easing the easing curve
+    // is inverted. To achieve this here we use the opposite function
+    // i.e. time ease in == ease out.
+    switch(easingCurve){
+        case(EASEIN):
+            if(timeEasing != 1){
+                return preCalcEaseInData(totalSteps, maxValue, easeAmount);
+            } else {
+                return preCalcEaseOutData(totalSteps, maxValue, easeAmount);
+            }
+        case(EASEOUT):
+            if(timeEasing != 1){
+                return preCalcEaseOutData(totalSteps, maxValue, easeAmount);
+            } else {
+                return preCalcEaseInData(totalSteps, maxValue, easeAmount);
+            }
+        case(FASTSLOWFAST):
+            if(timeEasing != 1){
+                return preCalcFastSlowFast(totalSteps, maxValue, easeAmount);
+            } else {
+                return preCalcSlowFastSlow(totalSteps, maxValue, easeAmount);
+            }
+        case(SLOWFASTSLOW):
+            if(timeEasing != 1){
+                return preCalcSlowFastSlow(totalSteps, maxValue, easeAmount);
+            } else {
+                return preCalcFastSlowFast(totalSteps, maxValue, easeAmount);
+            }
+    }
 }
 
-double preciseFastSlowFastStep(int currentStep, int totalSteps, unsigned long len){
-    return cubicBezierStep(currentStep, totalSteps, len, 1.0, 0.0);
+
+struct easeData preCalcEaseData(unsigned long totalSteps, unsigned long maxValue, double easeAmount, byte easingCurve){
+    return preCalcAllEaseData(totalSteps, maxValue, easeAmount, easingCurve, 0);
 }
 
-int fastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen){
-    return round(cubicBezierStep(currentStep, totalSteps, trackLen, 1.0, 0.0));
+struct easeData preCalcTimeEaseData(unsigned long totalSteps, unsigned long maxValue, double easeAmount, double easingCurve){
+    return preCalcAllEaseData(totalSteps, maxValue, easeAmount, easingCurve, 1);
 }
 
-int customFastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
-    double easeAdjust = 1.0 - customEasingFactor;
-    // I have no idea why this works
-    return round(cubicBezierStep(currentStep, totalSteps, trackLen, (1.0 - easeAdjust * 0.3333), 0.0 + easeAdjust * 0.3333));
+unsigned long calcEasePos(unsigned long currentStep, struct easeData curveData, byte easingCurveType, unsigned long thisStep){
+    switch(easingCurveType){
+        case(EASEIN):
+        case(EASEOUT):
+            return easePos(currentStep, curveData);
+        case(FASTSLOWFAST):
+        case(SLOWFASTSLOW):
+            return bezEasePos(currentStep, curveData);
+    }
 }
 
-long customLongFastSlowFastStep(int currentStep, int totalSteps, unsigned long trackLen, double customEasingFactor){
-    double easeAdjust = 1.0 - customEasingFactor;
-    // I have no idea why this works
-    return lround(cubicBezierStep(currentStep, totalSteps, trackLen, (1.0 - easeAdjust * 0.3333), 0.0 + easeAdjust * 0.3333));
-}
-
-/* }}} *
+/* }}} */
 /* Timelapse Functions {{{ */
 
 /* rotate {{{ */
@@ -390,11 +434,6 @@ void rotate(int steps, byte speed){
 /* dampRotate -------------------------------------------------- {{{ */
 
 void dampRotate(int steps) {
-    byte dir = (steps > 0)? HIGH:LOW;
-    steps = abs(steps);
-    digitalWrite(DIR_PIN, dir);
-
-
     unsigned int dampDelay = 5000;
     unsigned int normalDelay = 3000;
 
@@ -647,7 +686,7 @@ double customEasingCurveAmtMax = 0.99;
 double customTimeEasingCurveAmt = 0.5;
 double customTimeEasingCurveAmtMin = 0.01;
 double customTimeEasingCurveAmtMax = 0.99;
-byte timelapseDirection = 2;
+byte timelapseDirection = 1;
 int minInterval = 1000; // 1 sec
 
 /* }}} */
@@ -851,16 +890,16 @@ const char* easingCurveName(byte input){
             return "1. Linear       ";
             break;
         case 2:
-            return "2. Slow -> Fast ";
+            return "2. Big -> Small ";
             break;
         case 3:
-            return "3. Fast -> Slow ";
+            return "3. Small -> Big ";
             break;
         case 4:
-            return "4.Fast>Slow>Fast";
+            return "4.Big>Small>Big ";
             break;
         case 5:
-            return "5.Slow>Fast>Slow";
+            return "5.Small>Big>Sml";
             break;
     }
 }
@@ -911,18 +950,15 @@ void startTimelapse(){
 /* }}} */
 /* timelapse -------------------------------------------------- {{{ */
 
-void timelapse(byte dir, int shots, unsigned long instanceTime){
-#ifdef DEBUG_ON
-    printMemory();
-#endif
-    instanceTime = instanceTime * 1000; // Convert from seconds to milliseconds.
-    long shotDelay = (long)instanceTime / shots;
+void timelapse(byte dir, unsigned long shots, unsigned long instanceTime){
+    // Total milliseconds of a timelapse. Milliseconds less accurate
+    // than microseconds but the overflow for milliseconds is
+    // ~ 70 minutes, too short for some timelapse intervals.
+    unsigned long totalTime = instanceTime * 1000;
 
-    unsigned long stepStart = 0;
-    unsigned long stepLen = 0;
-    byte counter = 0;
-    int baseStepInterval = trackLen / shots;
-    int stepInterval = 0;
+
+    struct easeData slideEaseData = preCalcEaseData(shots, trackLen,customEasingCurveAmt, easingCurve);
+    struct easeData timeEaseData = preCalcTimeEaseData(shots, totalTime,customTimeEasingCurveAmt, timingEasingCurve);
 
     // Pre Delay
     delay(currentDelay * 1000);
@@ -931,94 +967,65 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
         lcd.setBacklight(LOW);
     }
 
+    unsigned long stepStart = 0;
+    unsigned long stepLen = 0;
+    byte counter = 0;
+
+    // Keeping track of the slide and time positions
+    unsigned long prevSlides = 0;
+    unsigned int thisSlide = trackLen / shots;
+    unsigned long prevTime = 0;
+    // How long the interval should be if each shot takes O time
+    // The time to move and shoot is subtracted to calculate the
+    // exact time of a timelapse
+    unsigned long thisDelay = totalTime / shots;
+
+    // Set the direction
+    setDir(dir);
+
     // Starting Loop
-    for (int i = 1; i <= shots; i++){
-#ifdef DEBUG_ON
-    printMemory();
-#endif
-        int revI = shots - i;
-        stepInterval = baseStepInterval;
+    for (unsigned long i = 1; i <= shots; i++){
         stepStart = millis();
         showTimelapseProgress(i, shots);
         takePicture();
         delay(maxShutter);
 
-        /* Slider Easing ----------------------------------------- {{{ */
-        switch(easingCurve){
-            /*
-               For ease in (Slow -> Fast) and ease out (Fast -> Slow)
-               the custom ease either steepens or smooth the curve
-               depending on whether the value is greater or less than
-               0.5, relatively.
-            */
-            case EASEIN:
-                stepInterval = customEaseInStep(i, shots, trackLen, 1 + customEasingCurveAmt);
-                break;
-            case EASEOUT:
-                stepInterval = customEaseOutStep(i, shots, trackLen, 1 + customEasingCurveAmt);
-                break;
-            /*
-               For bezier curves the max curve is 0.99 and any value
-               less dampens the curve with a value of 0.01 being linear.
-            */
-            case FASTSLOWFAST:
-                stepInterval = customFastSlowFastStep(i, shots, trackLen, customEasingCurveAmt);
-                break;
-            case SLOWFASTSLOW:
-                stepInterval = customSlowFastSlowStep(i, shots, trackLen, customEasingCurveAmt);
-                break;
+        if(easingCurve > LINEAR){
+            thisSlide = calcEasePos(i, slideEaseData, easingCurve, thisSlide) - prevSlides;
+            prevSlides += thisSlide;
         }
-        /* }}} */
-        if (dir > 1){
-            stepInterval *= -1;
-        }
-        // Account for random direction changes
-        if(EEPROM_DIRECTION == 2){
-            stepInterval *= -1;
-        }
-        //turn off sleep
+
         if(sleep == 1){
             sleepOff();
         }
 
-        dampRotate(stepInterval);
+        dampRotate(thisSlide);
 
-        /* turn on sleep */
         if(sleep == 1){
             sleepOn();
         }
+
         if(select()){
             counter += 1;
-            if(counter > 2){
+            if(counter >= 2){
                 break;
             }
         } else {
             counter = 0;
         }
+
         stepLen = millis() - stepStart;
 
-        /* time easing ------------------------------------------ {{{ */
-        switch(timingEasingCurve){
-            case EASEIN:
-                /* shotDelay = easeInStep(i, shots, instanceTime); */
-                shotDelay = customLongEaseInStep(i, shots, instanceTime, 1 + customTimeEasingCurveAmt);
-                break;
-            case EASEOUT:
-                /* shotDelay = easeOutStep(i, shots, instanceTime); */
-                shotDelay = customLongEaseOutStep(i, shots, instanceTime, 1 + customTimeEasingCurveAmt);
-                break;
-            case FASTSLOWFAST:
-                /* shotDelay = fastSlowFastStep(i, shots, instanceTime); */
-                shotDelay = customLongFastSlowFastStep(i, shots, instanceTime, customTimeEasingCurveAmt);
-                break;
-            case SLOWFASTSLOW:
-                /* shotDelay = slowFastSlowStep(i, shots, instanceTime); */
-                shotDelay = customLongSlowFastSlowStep(i, shots, instanceTime, customTimeEasingCurveAmt);
-                break;
+        if(timingEasingCurve > LINEAR){
+            thisDelay = calcEasePos(i, timeEaseData, timingEasingCurve, thisDelay) - prevTime;
+            prevTime += thisDelay;
         }
-        /* }}} */
-        if (stepLen < (shotDelay)){
-            delay((shotDelay) - stepLen);
+
+        // Only delay the shot if the elapsed time from shooting and
+        // moving is less than the calculated interval. Subtract this
+        // time from the interval before delaying
+        if (stepLen < thisDelay){
+            delay((thisDelay) - stepLen);
         }
     }
 }
@@ -1026,9 +1033,9 @@ void timelapse(byte dir, int shots, unsigned long instanceTime){
 /* }}} */
 /* showTimelapseProgress ---------------------------------------- {{{ */
 
-void showTimelapseProgress(unsigned long currentShot, int totalShots){
+void showTimelapseProgress(unsigned long currentShot, unsigned long totalShots){
     sprintf(utilityString, "Progress: %02d%%  ",int( currentShot * 100 / totalShots));
-    constProgmemFirstLineLcdPrint(tlStringPointers, 14, utilityString);
+    constProgmemFirstLineLcdPrint(tlStringPointers, 13, utilityString);
 }
 
 /* }}} */
@@ -1041,7 +1048,7 @@ void showTimelapseProgress(unsigned long currentShot, int totalShots){
 byte realtimeMenuLocation = 1;
 byte realtimeMenuMax = 6;
 byte realtimeMenuMin = 1;
-int realtimeNumShots = 500;
+int realtimeNumShots = 1000;
 byte realtimeCurrentMaxSpeed = 25;
 byte realtimeCurrentMinSpeed = 10;
 byte realtimeMaxMaxSpeed = 99;
@@ -1052,12 +1059,18 @@ byte realtimeEasingCurve = LINEAR;
 byte realtimeEasingCurveMin = 1;
 byte realtimeEasingCurveMax = 5;
 byte realtimeDirection = 1;
+double realtimeCustomEasingAmt = 0.50;
+double realtimeCustomEasingAmtMin = 0.00;
+double realtimeCustomEasingAmtMax = 0.99;
+long realtimeTotalSeconds = 15;
+long realtimeTotalSecondsMin = 1;
+long realtimeTotalSecondsMax = 300;
 
 /* }}} */
 /* configureRealtime {{{ */
 void configureRealtime(){
     //Print current menu
-    incrementRealtimeMenu(0, realtimeMenuLocation, 0);
+    incrementRealtimeMenu(0, realtimeMenuLocation, 0, 0);
     int counter = 0;
     while(selectTrigger(1000)){
         int buttonDelay = 150;
@@ -1067,18 +1080,18 @@ void configureRealtime(){
             if (xLow()){
                 realtimeMenuLocation = reflow(realtimeMenuLocation - 1, realtimeMenuMin, realtimeMenuMax);
 
-                incrementRealtimeMenu(0, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(0, realtimeMenuLocation, counter, -1);
             } else if (xHigh()){
                 realtimeMenuLocation = reflow(realtimeMenuLocation + 1, realtimeMenuMin, realtimeMenuMax);
-                incrementRealtimeMenu(0, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(0, realtimeMenuLocation, counter, 1);
             }
         } else if (yHigh() || yLow()){
             delay(buttonDelay);
             counter += 1;
             if (yLow()){
-                incrementRealtimeMenu(-1, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(-1, realtimeMenuLocation, counter, 0);
             } else if (yHigh()){
-                incrementRealtimeMenu(1, realtimeMenuLocation, counter);
+                incrementRealtimeMenu(1, realtimeMenuLocation, counter, 0);
             }
         } else {
             counter = 0;
@@ -1087,46 +1100,52 @@ void configureRealtime(){
 }
 /* }}} */
 /* incrementRealtimeMenu {{{ */
-void incrementRealtimeMenu(int input, int currentMenu, int counter){
+/* dir */
+/* -1 = left */
+/* 1 = right */
+void incrementRealtimeMenu(int input, int currentMenu, int counter, int dir){
     switch(currentMenu){
-        case 1: //Min Speed
-            realtimeCurrentMinSpeed += incrementVar(input, counter);
-            realtimeCurrentMinSpeed = reflow(realtimeCurrentMinSpeed, realtimeMinMinSpeed, realtimeMinMaxSpeed);
-            sprintf(utilityString, "%02d              ", realtimeCurrentMinSpeed);
+        case 1: // Move Time
+            realtimeTotalSeconds += incrementVar(input, counter);
+            realtimeTotalSeconds = reflowLong(realtimeTotalSeconds, realtimeTotalSecondsMin, realtimeTotalSecondsMax);
+            sprintf(utilityString, "%3ld seconds     ", realtimeTotalSeconds);
             constProgmemFirstLineLcdPrint(realtimePointers, 1, utilityString);
             break;
-        case 2: //Speed
-            if (realtimeCurrentMaxSpeed < realtimeCurrentMinSpeed) {
-                realtimeCurrentMaxSpeed = realtimeCurrentMinSpeed + 1;
-            }
-            realtimeCurrentMaxSpeed += incrementVar(input, counter);
-            realtimeCurrentMaxSpeed = reflow(realtimeCurrentMaxSpeed, realtimeCurrentMinSpeed + 1, realtimeMaxMaxSpeed);
-            sprintf(utilityString, "%02d              ", realtimeCurrentMaxSpeed);
-            constProgmemFirstLineLcdPrint(realtimePointers, 2, utilityString);
-            break;
-        case 3: //Easing Curve
+        case 2: //Easing Curve
+            RTEasingCurve:
             realtimeEasingCurve -= incrementVar(input, 0);
             realtimeEasingCurve = reflow(realtimeEasingCurve, realtimeEasingCurveMin, realtimeEasingCurveMax);
             sprintf(utilityString, "%s    ", easingCurveName(realtimeEasingCurve));
             constProgmemFirstLineLcdPrint(realtimePointers, 3, utilityString);
             break;
+        case 3: // Easing Amount
+            if(realtimeEasingCurve == LINEAR){
+                if(dir > 0){
+                    realtimeMenuLocation++;
+                    goto RTDirection;
+                } else {
+                    realtimeMenuLocation--;
+                    goto RTEasingCurve;
+                }
+            } else {
+                realtimeCustomEasingAmt += incrementDoubleVar(input, counter);
+                realtimeCustomEasingAmt = doubleReflow(realtimeCustomEasingAmt, realtimeCustomEasingAmtMin, realtimeCustomEasingAmtMax);
+                sprintf(utilityString, "0.%02d            ", (int) round(realtimeCustomEasingAmt * 100));
+                constProgmemFirstLineLcdPrint(realtimePointers, 5, utilityString);
+                break;
+            }
         case 4://Direction
+            RTDirection:
             realtimeDirection += incrementVar(input, 0);
             realtimeDirection = reflow(realtimeDirection, 1, 2);
             if (realtimeDirection == 1){
-                constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 12);
+                constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 11);
             } else {
-                constProgmemLcdPrint(tlStringPointers, 11, tlStringPointers, 13);
+                constProgmemLcdPrint(tlStringPointers, 10, tlStringPointers, 12);
             }
-            /* if (realtimeDirection == 1){ */
-            /*     lcd.clear(); */
-            /*     lcdPrint("Movement Dir:   ", timelapseModeDirectionLineTwoME); */
-            /* } else { */
-            /*     lcdPrint(timelapseModeDirectionLineOne, timelapseModeDirectionLineTwoEM); */
-            /* } */
             break;
         case 5: //
-            lcdPrint("Move Right to   ", "start RT move  >");
+            lcdPrint("Move Right to   ", "start Vid move >");
             break;
         case 6:
             lcdPrint("Starting Move...", "Sel to cancel   ");
@@ -1148,56 +1167,31 @@ void startRealtime(){
 /* realtime -------------------------------------------------- {{{ */
 
 void realtime(byte dir, int shots){
-    float realtimeSpeedDiff = (float(realtimeCurrentMaxSpeed * 1.0) - float(realtimeCurrentMinSpeed * 1.0)) * 1000.0;
-
-    long stepInterval = 1;
-    long baseStepInterval = (trackLen - 2500) / shots; // Accounting for rev up / down
+    // Keeps track of how many loops the select button was pressed
     byte counter = 0;
-    float instanceSpeed = 1.0;
-    instanceSpeed = float(realtimeCurrentMaxSpeed) * 1000.0;
-    float minSpeed = float(realtimeCurrentMinSpeed) * 1000.0;
 
+    // Time in microseconds (millionths of a second) of the move.
+    unsigned long totalTime = (unsigned long) (realtimeTotalSeconds * 1000000);
+
+    struct easeData rtEaseData = preCalcTimeEaseData(trackLen, totalTime, realtimeCustomEasingAmt, realtimeEasingCurve);
+
+    unsigned long prevSteps = 0;
+    unsigned long thisStep = totalTime / trackLen;
+    unsigned long calcStart = 0;
+
+    sleepOff();
+    setDir(dir);
     takeVideo();
-    delay(3000); // Add editing time before shot
+    /* delay(3000); // Add editing time before shot */
 
-    for (int i = 1; i <= shots; i++){
-        stepInterval = baseStepInterval;
-        int revI = (shots + 1) - i;
-
-        /* Slider Easing ----------------------------------------- {{{ */
-        switch(realtimeEasingCurve){
-            case EASEIN:
-                instanceSpeed = float(preciseEaseInStep(i, shots, realtimeSpeedDiff));
-                break;
-            case EASEOUT:
-                instanceSpeed = float(preciseEaseOutStep(i, shots, realtimeSpeedDiff));
-                break;
-            case FASTSLOWFAST:
-                instanceSpeed = float(preciseFastSlowFastStep(i, shots, realtimeSpeedDiff) * 1000.0);
-                break;
-            case SLOWFASTSLOW:
-                instanceSpeed = float(preciseSlowFastSlowStep(i, shots, realtimeSpeedDiff) * 1000.0);
-                break;
-        }
-        /* }}} */
-        if (dir > 1){
-            stepInterval *= -1;
+    for (unsigned long i = 1; i <= trackLen; i++){
+        calcStart = micros();
+        if(realtimeEasingCurve > LINEAR){
+            thisStep = calcEasePos(i, rtEaseData, realtimeEasingCurve, thisStep) - prevSteps;
+            prevSteps += thisStep;
         }
 
-        // Account for random direction changes
-        if(EEPROM_DIRECTION == 2){
-            stepInterval *= -1;
-        }
-
-        if (i == 1){
-            dampStart(stepInterval, (instanceSpeed + minSpeed));
-        }
-
-        preciseRotate(stepInterval, (instanceSpeed + minSpeed));
-
-        if (i == shots){
-            dampEnd(stepInterval, (instanceSpeed + minSpeed));
-        }
+        absoluteRotate((int)(thisStep - (micros() - calcStart)), 1);
 
         if(select()){
             counter += 1;
@@ -1209,28 +1203,47 @@ void realtime(byte dir, int shots){
         }
     }
 
-    delay(3000); // Edit time after shot
+    /* delay(3000); // Edit time after shot */
     takeVideo();
     sleepOff();
 }
 
 /* }}} */
-/* preciseRotate -------------------------------------------------- {{{ */
+/* absoluteRotate --------------------------------------------- {{{ */
 
-void preciseRotate(int steps, float speed){
-    byte dir = (steps > 0)? HIGH:LOW;
-    steps = abs(steps);
-    digitalWrite(DIR_PIN, dir);
-    // Not sure why * 70
-    float speedDivisor = speed / 100000.0;
-    float speedQuotient = 1.0 / speedDivisor;
-    float usDelay = speedQuotient * 70.0;
+void absoluteRotate(int usDelay){
 
-    for(int i = 0; i < steps; i++){
+    if(usDelay < 6){
+        // The arduino docs state that a 3 microsecond delay is the
+        // smallest microsecond delay that is accurate. 6 / 2 = 3.
+        usDelay = 6;
+    }
+
+    unsigned int firstDelay = usDelay / 2;
+    unsigned int lastDelay = usDelay - firstDelay;
+
+    for(unsigned int i = 0; i < steps; i++){
         digitalWrite(STEP_PIN, HIGH);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(firstDelay);
         digitalWrite(STEP_PIN, LOW);
-        delayMicroseconds(usDelay);
+        delayMicroseconds(lastDelay);
+    }
+}
+
+void setDir(byte inputDir){
+    int rotateDir = 1;
+    if (inputDir == 2){
+        rotateDir *= -1;
+    }
+
+    // Account for random direction changes
+    if(EEPROM_DIRECTION == 2){
+        rotateDir *= -1;
+    }
+    if(rotateDir > 0){
+        digitalWrite(DIR_PIN, HIGH);
+    } else {
+        digitalWrite(DIR_PIN, LOW);
     }
 }
 
@@ -1602,6 +1615,16 @@ unsigned long reflowUnsignedLong(unsigned long input, unsigned long minOutput, u
     }
 }
 
+long reflowLong(long input, long minOutput, long maxOutput){
+    if (input > maxOutput){
+        return minOutput;
+    } else if (input < minOutput){
+        return maxOutput;
+    } else {
+        return input;
+    }
+}
+
 double doubleReflow(double input, double minOutput, double maxOutput){
     if (input > maxOutput){
         return minOutput;
@@ -1618,7 +1641,6 @@ void secondaryMenuShow(int input){
     int flashDelay = 250;
     switch(input){
         case 1: // Timelapse
-            /* constFirstLcdPrint(enteringTimelapseMode, holdSelToExit); */
             constProgmemLcdPrint(tlStringPointers, 0, selPointer, 0);
             delay(flashDelay);
             configureTimelapse();
@@ -1677,7 +1699,7 @@ void setup()
 
     /* Serial */
 #ifdef DEBUG_ON
-    Serial.begin(9600);
+    Serial.begin(115200);
     Serial.print(F("Beginning Serial!\r\n"));
 #endif
 
@@ -1688,8 +1710,8 @@ void setup()
     lcd.begin(16, 2);
     lcd.print(F("   Slidelapse"));
     lcd.setCursor(0, 1);
-    lcd.print(F(" Version 0.8.0"));
-    delay(1500);
+    lcd.print(F(" Version 0.9.0"));
+    delay(1000);
     lcd.clear();
 
     /* EEPROM Direction Read */
